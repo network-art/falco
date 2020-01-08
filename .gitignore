@@ -1,3 +1,11 @@
+# Emacs temporary files
+*~
+
+# Build, Staging and Installation areas
+build
+install
+stage
+
 # Prerequisites
 *.d
 

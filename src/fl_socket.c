@@ -43,7 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SA_CCAST(_addr_) (const struct sockaddr *)(_addr_)
 
 static fd_set exec_rbits, exec_wbits, exec_ebits;
-static int max_sockfd;
 static LIST_HEAD(fl_sockets_, fl_socket_t_) fl_sockets;
 
 static const values_t fl_socket_domains[] = {
@@ -123,7 +122,9 @@ int fl_socket_module_dump(FILE *fd)
     fprintf(fd, "Name: %s(%d)\n", li->name, li->sockfd);
     fprintf(fd, "-----\n");
 
-    fprintf(fd, "    Task: %s\n", li->task->name);
+    if (li->task) {
+      fprintf(fd, "    Task: %s\n", li->task->name);
+    }
     fprintf(fd, "    Domain %s(%d), Type %s(%d), Protocol %d\n",
             fl_trace_value(fl_socket_domains, li->domain), li->domain,
             fl_trace_value(fl_socket_types, li->type), li->type,
@@ -217,9 +218,7 @@ fl_socket_t *fl_socket_socket(fl_task_t *task, const char *name,
     return NULL;
   }
 
-  if (sockfd > max_sockfd) {
-    max_sockfd = sockfd;
-  }
+  fl_fds_set_max_fd(sockfd);
 
   return flsk;
 }
@@ -475,9 +474,7 @@ void fl_socket_generic_accept(fl_socket_t *flsk)
     return;
   }
 
-  if (peerfd > max_sockfd) {
-    max_sockfd = peerfd;
-  }
+  fl_fds_set_max_fd(peerfd);
 
   /* Set the fd again so that we can process other incoming connections */
   FL_FD_SET(flsk->sockfd, FL_FD_OP_ACCEPT);
@@ -865,7 +862,8 @@ int fl_socket_select(fd_set **rfds, fd_set **wfds, fd_set **efds)
   }
 
  retry_select:
-  nfds = select(max_sockfd + 1, *rfds, *wfds, *efds, (njobs) ? &tv : NULL);
+  nfds = select(fl_fds_get_max_fd() + 1, *rfds, *wfds, *efds,
+                (njobs) ? &tv : NULL);
   if ((nfds == 0) && !njobs) {
     FL_LOGR_ERR("select() fired with no fds");
     FL_ASSERT(0);

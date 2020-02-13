@@ -68,7 +68,9 @@ int fl_timer_module_dump(FILE *fd)
   LIST_FOREACH(li, &fl_timers, timer_lc) {
     fprintf(fd, "Name: %s(%d)\n", li->name, li->timerfd);
     fprintf(fd, "------------------------------------------\n");
-    fprintf(fd, "    Task: %s\n", li->task->name);
+    if (li->task) {
+      fprintf(fd, "    Task: %s\n", li->task->name);
+    }
     fprintf(fd, "    when: %d seconds, interval: %d seconds\n",
             li->fire_when, li->fire_interval);
   }
@@ -105,6 +107,8 @@ void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
     return NULL;
   }
 
+  timer->fire_when = fire_when;
+  timer->fire_interval = fire_interval;
   timer->timer_method = timer_method;
   timer->app_data = app_data;
   (void) strcpy(timer->name, timer_name);
@@ -179,6 +183,9 @@ int fl_timer_start(fl_timer_t *timer)
                 strerror(save_errno));
     return -save_errno;
   }
+
+  fl_fds_set_max_fd(timer->timerfd);
+  FL_FD_SET(timer->timerfd, FL_FD_OP_READ);
 
   return 0;
 }

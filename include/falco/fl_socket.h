@@ -134,6 +134,7 @@ extern int fl_socket_module_dump(FILE *fd);
 
 extern fl_socket_t *fl_socket_socket(struct fl_task_t_ *task, const char *name,
                                      int domain, int type, int protocol);
+extern int fl_socket_set_max_sockfd(int fd);
 extern int fl_socket_setsockopt(fl_socket_t *flsk, fl_sockoption_e option, ...);
 extern int fl_socket_bind(fl_socket_t *flsk,
                           const struct sockaddr_storage *addr,

@@ -46,6 +46,8 @@ const values_t fl_fd_ops[] = {
   { 0, NULL }
 };
 
+static int max_fd_number;
+
 fl_fd_set_t *fl_fds_get_set(fl_fd_op_e op)
 {
   switch (op) {
@@ -58,4 +60,16 @@ fl_fd_set_t *fl_fds_get_set(fl_fd_op_e op)
 
   FL_ASSERT(0);
   return NULL;
+}
+
+int fl_fds_get_max_fd(void)
+{
+  return max_fd_number;
+}
+
+void fl_fds_set_max_fd(int fd)
+{
+  if (fd > max_fd_number) {
+    max_fd_number = fd;
+  }
 }

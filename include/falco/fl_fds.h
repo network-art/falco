@@ -95,4 +95,7 @@ inline int FL_FDS_ANYFDS_SET(fl_fd_op_e op)
   return (fdset->nfds > 0);
 }
 
+extern int fl_fds_get_max_fd(void);
+extern void fl_fds_set_max_fd(int fd);
+
 #endif /* _FL_FDS_H_ */

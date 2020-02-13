@@ -106,6 +106,68 @@ int fl_socket_module_init(void)
   return 0;
 }
 
+int fl_socket_module_dump(FILE *fd)
+{
+  register fl_socket_t *li;
+
+  fprintf(fd, "\n--------------------------------------------------------------------------------\n");
+  fprintf(fd, "Sockets\n");
+  fprintf(fd, "--------------------------------------------------------------------------------\n\n");
+
+  if (LIST_EMPTY(&fl_sockets)) {
+    fprintf(fd, "    No sockets are currently present\n");
+    return 0;
+  }
+
+  LIST_FOREACH(li, &fl_sockets, socket_lc) {
+    fprintf(fd, "Name: %s(%d)\n", li->name, li->sockfd);
+    fprintf(fd, "-----\n");
+
+    fprintf(fd, "    Task: %s\n", li->task->name);
+    fprintf(fd, "    Domain %s(%d), Type %s(%d), Protocol %d\n",
+            fl_trace_value(fl_socket_domains, li->domain), li->domain,
+            fl_trace_value(fl_socket_types, li->type), li->type,
+            li->protocol);
+    fprintf(fd, "    %s\n", fl_trace_flags(fl_sockflags, li->flags));
+    fprintf(fd, "    Local address: %s, Remote address: %s\n",
+            (strlen(li->local_addr)) ? li->local_addr : "None",
+            (strlen(li->remote_addr)) ? li->remote_addr : "None");
+    if (li->rbuf) {
+      fprintf(fd, "    Read buffer size:  %d bytes\n", (int) li->trbuf_len);
+      fprintf(fd, "    Read data length:  %d bytes (current)\n", (int) li->crdata_len);
+    }
+    if (li->wbuf) {
+      fprintf(fd, "    Write buffer size: %d bytes\n", (int) li->twbuf_len);
+      fprintf(fd, "    Write data length: %d bytes (current)\n", (int) li->cwdata_len);
+    }
+
+    fprintf(fd, "    accept_method:               %s\n",
+            (li->accept_method) ? "yes" : "no");
+    fprintf(fd, "    connect_method:              %s\n",
+            (li->connect_method) ? "yes" : "no");
+    fprintf(fd, "    connect_complete_method:     %s\n",
+            (li->connect_complete_method) ? "yes" : "no");
+    fprintf(fd, "    recv_method:                 %s\n",
+            (li->recv_method) ? "yes" : "no");
+    fprintf(fd, "    nb_recv_method:              %s\n",
+            (li->nb_recv_method) ? "yes" : "no");
+    fprintf(fd, "    recv_is_msg_complete_method: %s\n",
+            (li->recv_is_msg_complete_method) ? "yes" : "no");
+    fprintf(fd, "    recv_error_method:           %s\n",
+            (li->recv_error_method) ? "yes" : "no");
+    fprintf(fd, "    send_method:                 %s\n",
+            (li->send_method) ? "yes" : "no");
+    fprintf(fd, "    nb_send_method:              %s\n",
+            (li->nb_send_method) ? "yes" : "no");
+    fprintf(fd, "    send_complete_method:        %s\n",
+            (li->send_complete_method) ? "yes" : "no");
+    fprintf(fd, "    send_error_method:           %s\n",
+            (li->send_error_method) ? "yes" : "no");
+  }
+
+  return 0;
+}
+
 fl_socket_t *fl_socket_socket(fl_task_t *task, const char *name,
                               int domain, int type, int protocol)
 {

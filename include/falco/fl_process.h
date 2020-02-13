@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _FL_PROCESS_H_
 
 extern int fl_init(void);
+extern int fl_dump(FILE *fd);
 
 extern int fl_process_daemonize(void);
 extern int fl_process_open_pid_file(const char *progname);

@@ -130,6 +130,7 @@ typedef enum fl_sockoption_e_ {
 } fl_sockoption_e;
 
 extern int fl_socket_module_init(void);
+extern int fl_socket_module_dump(FILE *fd);
 
 extern fl_socket_t *fl_socket_socket(struct fl_task_t_ *task, const char *name,
                                      int domain, int type, int protocol);

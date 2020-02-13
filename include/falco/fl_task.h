@@ -58,6 +58,7 @@ typedef struct fl_task_t_ {
 } fl_task_t;
 
 extern int fl_task_module_init(void);
+extern int fl_task_module_dump(FILE *fd);
 
 extern fl_task_t *fl_task_create(const char *name);
 extern void fl_task_delete(fl_task_t *task);
@@ -65,6 +66,5 @@ extern fl_task_t *fl_task_validate_taskptr(fl_task_t *task);
 
 extern void fl_tasks_reinit();
 extern void fl_tasks_terminate();
-extern void fl_tasks_dump();
 
 #endif /* _FL_TASK_H_ */

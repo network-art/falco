@@ -60,6 +60,8 @@ typedef struct fl_timer_t_ {
 } fl_timer_t;
 
 extern int fl_timer_module_init(void);
+extern int fl_timer_module_dump(FILE *fd);
+
 extern void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
                              fl_app_timer_method_t timer_method,
                              const char *timer_name, void *app_data);

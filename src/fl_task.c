@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "falco/fl_stdlib.h"
 #include "falco/fl_task.h"
 #include "falco/fl_socket.h"
+#include "falco/fl_timer.h"
 
 static LIST_HEAD(fl_tasks_, fl_task_t_) fl_tasks;
 
@@ -43,6 +44,48 @@ int fl_task_module_init(void)
   LIST_INIT(&fl_tasks);
 
   FL_LOGR_INFO("Falco Task module initialized");
+  return 0;
+}
+
+int fl_task_module_dump(FILE *fd)
+{
+  register fl_task_t *task_li;
+  register fl_timer_t *task_timer_li;
+  register fl_socket_t *task_socket_li;
+  register int ntimers, nsockets;
+
+  fprintf(fd, "\n--------------------------------------------------------------------------------\n");
+  fprintf(fd, "Tasks\n");
+  fprintf(fd, "--------------------------------------------------------------------------------\n\n");
+
+  if (LIST_EMPTY(&fl_tasks)) {
+    fprintf(fd, "    No tasks are currently present\n");
+    return 0;
+  }
+
+  LIST_FOREACH(task_li, &fl_tasks, task_lc) {
+    ntimers = nsockets = 0;
+
+    fprintf(fd, "%s\n", task_li->name);
+    fprintf(fd, "--------------------------------\n");
+    fprintf(fd, "    reinit method: %s\n",
+            (task_li->reinit_method) ? "yes" : "no");
+    fprintf(fd, "    reinit method: %s\n",
+            (task_li->terminate_method) ? "yes" : "no");
+    fprintf(fd, "    dump method:   %s\n",
+            (task_li->dump_method) ? "yes" : "no");
+
+    LIST_FOREACH(task_timer_li, &task_li->task_timers, task_timer_lc) {
+      ntimers++;
+    }
+    LIST_FOREACH(task_socket_li, &task_li->task_sockets, task_socket_lc) {
+      ntimers++;
+    }
+
+    fprintf(fd, "    %d timers, %d sockets\n", ntimers, nsockets);
+    fprintf(fd, "\n");
+  }
+
   return 0;
 }
 
@@ -103,9 +146,5 @@ void fl_tasks_reinit()
 }
 
 void fl_tasks_terminate()
-{
-}
-
-void fl_tasks_dump()
 {
 }

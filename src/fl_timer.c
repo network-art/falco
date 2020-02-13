@@ -52,6 +52,30 @@ int fl_timer_module_init()
   return 0;
 }
 
+int fl_timer_module_dump(FILE *fd)
+{
+  register fl_timer_t *li;
+
+  fprintf(fd, "\n--------------------------------------------------------------------------------\n");
+  fprintf(fd, "Timers\n");
+  fprintf(fd, "--------------------------------------------------------------------------------\n\n");
+
+  if (LIST_EMPTY(&fl_timers)) {
+    fprintf(fd, "    No timers are currently present\n");
+    return 0;
+  }
+
+  LIST_FOREACH(li, &fl_timers, timer_lc) {
+    fprintf(fd, "Name: %s(%d)\n", li->name, li->timerfd);
+    fprintf(fd, "------------------------------------------\n");
+    fprintf(fd, "    Task: %s\n", li->task->name);
+    fprintf(fd, "    when: %d seconds, interval: %d seconds\n",
+            li->fire_when, li->fire_interval);
+  }
+
+  return 0;
+}
+
 void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
                       fl_app_timer_method_t timer_method,
                       const char *timer_name, void *app_data)

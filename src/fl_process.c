@@ -218,3 +218,18 @@ int fl_process_close_pid_file(const char *progname, int pid_fd)
   FL_LOGR_INFO("Removed %s", pid_filepath);
   return 0;
 }
+
+int fl_dump(FILE *fd)
+{
+  if (!fd) {
+    FL_ASSERT(0);
+    FL_LOGR_ERR("falco: Invalid file descriptor supplied for dumping process state");
+    return -1;
+  }
+
+  fl_task_module_dump(fd);
+  fl_socket_module_dump(fd);
+  fl_timer_module_dump(fd);
+
+  return 0;
+}

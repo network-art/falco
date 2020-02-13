@@ -30,13 +30,32 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_PROCESS_H_
-#define _FL_PROCESS_H_
+#include "falco/fl_stdlib.h"
+#include "falco/fl_tracevalue.h"
+#include "falco/fl_fds.h"
 
-extern int fl_init(void);
+fl_fd_set_t select_rbits;
+fl_fd_set_t select_wbits;
+fl_fd_set_t select_ebits;
 
-extern int fl_process_daemonize(void);
-extern int fl_process_open_pid_file(const char *progname);
-extern int fl_process_close_pid_file(const char *progname, int pid_fd);
+const values_t fl_fd_ops[] = {
+  { FL_FD_OP_READ,   "Read"   },
+  { FL_FD_OP_WRITE,  "Write"  },
+  { FL_FD_OP_ACCEPT, "Accept" },
+  { FL_FD_OP_EXCEPT, "Except" },
+  { 0, NULL }
+};
 
-#endif /* _FL_PROCESS_H_ */
+fl_fd_set_t *fl_fds_get_set(fl_fd_op_e op)
+{
+  switch (op) {
+  case FL_FD_OP_READ:   return &select_rbits;
+  case FL_FD_OP_WRITE:  return &select_wbits;
+  case FL_FD_OP_ACCEPT: return &select_rbits;
+  default:
+  case FL_FD_OP_EXCEPT: return &select_ebits;
+  }
+
+  FL_ASSERT(0);
+  return NULL;
+}

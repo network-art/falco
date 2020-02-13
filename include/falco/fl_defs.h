@@ -30,13 +30,38 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_PROCESS_H_
-#define _FL_PROCESS_H_
+#ifndef _FL_DEFS_H_
+#define _FL_DEFS_H_
 
-extern int fl_init(void);
+#include <sys/param.h>
+#include <limits.h>
+#include <paths.h>
 
-extern int fl_process_daemonize(void);
-extern int fl_process_open_pid_file(const char *progname);
-extern int fl_process_close_pid_file(const char *progname, int pid_fd);
+#ifndef TRUE
+#define TRUE 1
+#endif /* TRUE */
 
-#endif /* _FL_PROCESS_H_ */
+#ifndef FALSE
+#define FALSE 0
+#endif /* FALSE */
+
+#ifndef LINE_MAX
+/* If the host platform gives us a POSIX2 limit, then let us use that.
+ * This usually comes from <bits/posix2_lim.h> included from limits.h.
+ */
+#ifdef _POSIX2_LINE_MAX
+#define LINE_MAX _POSIX2_LINE_MAX
+#else /* _POSIX2_LINE_MAX */
+#define LINE_MAX 256
+#endif /* _POSIX2_LINE_MAX */
+#endif /* LINE_MAX */
+
+#ifndef _PATH_PID
+#ifdef _PATH_VARRUN
+#define _PATH_PID _PATH_VARRUN
+#else
+#define _PATH_PID "/var/run/"
+#endif
+#endif /* _PATH_PID */
+
+#endif /* _FL_DEFS_H_ */

@@ -30,13 +30,41 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_PROCESS_H_
-#define _FL_PROCESS_H_
+#ifndef _FL_TASK_H_
+#define _FL_TASK_H_
 
-extern int fl_init(void);
+#include <sys/queue.h>
 
-extern int fl_process_daemonize(void);
-extern int fl_process_open_pid_file(const char *progname);
-extern int fl_process_close_pid_file(const char *progname, int pid_fd);
+#include "falco/fl_socket.h"
 
-#endif /* _FL_PROCESS_H_ */
+#define FL_TASK_NAME_MAX_LEN 32
+
+typedef void (*fl_task_reinit_method_t)(struct fl_task_t_ *);
+typedef void (*fl_task_terminate_method_t)(struct fl_task_t_ *);
+typedef void (*fl_task_dump_method_t)(struct fl_task_t_ *);
+
+typedef struct fl_task_t_ {
+  LIST_ENTRY(fl_task_t_) task_lc;
+
+  char name[FL_TASK_NAME_MAX_LEN];
+
+  LIST_HEAD(, fl_timer_t_) task_timers;
+  LIST_HEAD(, fl_socket_t_) task_sockets;
+
+  fl_task_reinit_method_t reinit_method;
+  fl_task_terminate_method_t terminate_method;
+  fl_task_dump_method_t dump_method;
+
+} fl_task_t;
+
+extern int fl_task_module_init(void);
+
+extern fl_task_t *fl_task_create(const char *name);
+extern void fl_task_delete(fl_task_t *task);
+extern fl_task_t *fl_task_validate_taskptr(fl_task_t *task);
+
+extern void fl_tasks_reinit();
+extern void fl_tasks_terminate();
+extern void fl_tasks_dump();
+
+#endif /* _FL_TASK_H_ */

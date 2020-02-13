@@ -34,9 +34,9 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 enable_language(C)
 
-option(BUILD_TESTS "Enable build of unit tests" OFF)
+option(BUILD_TESTS "Build unit tests" OFF)
 option(ENABLE_CC_DEBUG_SYMBOLS "Produce debugging information for GDB" ON)
-option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done GCC" ON)
+option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done by GCC" ON)
 option(ENABLE_ASSERTIONS "Enable assert calls" ON)
 
 if(ENABLE_CC_DEBUG_SYMBOLS)
@@ -74,9 +74,13 @@ endif()
 include_directories(include)
 
 add_library(${PROJECT_NAME}_s STATIC
+  src/fl_fds.c
   src/fl_logr.c
   src/fl_process.c
   src/fl_signal.c
+  src/fl_socket.c
+  src/fl_task.c
+  src/fl_timer.c
   src/fl_tracevalue.c
 )
 

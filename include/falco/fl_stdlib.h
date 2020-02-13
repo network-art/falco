@@ -36,6 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <assert.h>
 
+#include "falco/fl_logr.h"
+
 #if (defined(ENABLE_ASSERTIONS))
 #define FL_ASSERT(_cond_) assert(_cond_)
 #else /* !ENABLE_ASSERTIONS */
@@ -50,7 +52,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       FL_LOGR_CRIT("%s, %d: Unable to allocate memory "             \
                    "[Requested %d blocks of size %d each] for %s",  \
                    __func__, __LINE__,                              \
-                   (unsigned int)_n_, sizeof(_casttotype_), _msg_); \
+                   (unsigned int)_n_, (int) sizeof(_casttotype_),   \
+                   _msg_);                                          \
     }                                                               \
   } while (0)
 
@@ -63,7 +66,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       FL_LOGR_CRIT("%s, %d: Unable to allocate memory "             \
                    "[Requested %d blocks of size %d each] for %s",  \
                    __func__, __LINE__,                              \
-                   _n_, sizeof(_casttotype_), _msg_);               \
+                   _n_, (int) sizeof(_casttotype_), _msg_);         \
     }                                                               \
   } while (0)
 

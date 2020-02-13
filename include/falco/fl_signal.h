@@ -37,10 +37,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "falco/fl_tracevalue.h"
 
-typedef void (*fl_sighandler_t)(int, siginfo_t *, void *);
+typedef void (*fl_signal_handler_t)(int, siginfo_t *, void *);
 
-extern int fl_signal_add(int, fl_sighandler_t);
-extern int fl_signal_remove(int);
+/* Convenience structure for applications to define a list of signals and their
+ * respective handlers.
+ */
+typedef struct fl_signal_handler_regn_t_ {
+  int signum;
+  fl_signal_handler_t signal_handler;
+} fl_signal_handler_regn_t;
+
+extern int fl_signal_register_handlers(fl_signal_handler_regn_t *sighandler_registrations);
+extern int fl_signal_add(int signum, fl_signal_handler_t sighandler);
+extern int fl_signal_remove(int signum);
+extern int fl_signals_block(int signals[], sigset_t *set);
+extern int fl_signals_unblock(sigset_t *set);
 
 extern const values_t fl_signals[];
 

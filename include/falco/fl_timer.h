@@ -30,13 +30,43 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_PROCESS_H_
-#define _FL_PROCESS_H_
+#ifndef _FL_TIMER_H_
+#define _FL_TIMER_H_
 
-extern int fl_init(void);
+#include <sys/queue.h>
+#include <sys/timerfd.h>
 
-extern int fl_process_daemonize(void);
-extern int fl_process_open_pid_file(const char *progname);
-extern int fl_process_close_pid_file(const char *progname, int pid_fd);
+#include "falco/fl_task.h"
 
-#endif /* _FL_PROCESS_H_ */
+#define FL_TIMER_NAME_MAX_LEN 32
+
+typedef void (*fl_app_timer_method_t)(const char *timer_name, void *app_data);
+
+typedef struct fl_timer_t_ {
+  LIST_ENTRY(fl_timer_t_) timer_lc;
+  LIST_ENTRY(fl_timer_t_) task_timer_lc;
+
+  /* Data provided by the application */
+  int fire_when;
+  int fire_interval;
+  char name[FL_TIMER_NAME_MAX_LEN];
+  fl_app_timer_method_t timer_method;
+  void *app_data;
+
+  /* Falco Timer module internal data */
+  int timerfd;
+  struct itimerspec its;
+  fl_task_t *task;
+} fl_timer_t;
+
+extern int fl_timer_module_init(void);
+extern void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
+                             fl_app_timer_method_t timer_method,
+                             const char *timer_name, void *app_data);
+extern int fl_timer_start(fl_timer_t *timer);
+extern int fl_timer_stop(fl_timer_t *timer);
+extern int fl_timer_delete(fl_timer_t *timer);
+
+extern void fl_timers_dispatch(int *nfds, fd_set *rfds);
+
+#endif /* _FL_TIMER_H_ */

@@ -129,6 +129,12 @@ typedef enum fl_sockoption_e_ {
   FL_SOCKOPT_MAX = FL_SOCKOPT_SNDTIMEO,
 } fl_sockoption_e;
 
+extern int fl_sockaddr_cmp(const struct sockaddr *sa1,
+                           const struct sockaddr *sa2);
+extern int fl_sockaddr_nw_cmp(const struct sockaddr *sa1,
+                              const struct sockaddr *sa2,
+                              const struct sockaddr *netmask);
+
 extern int fl_socket_module_init(void);
 extern int fl_socket_module_dump(FILE *fd);
 

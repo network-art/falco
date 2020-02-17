@@ -42,6 +42,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SA_CAST(_addr_)  (struct sockaddr *)(_addr_)
 #define SA_CCAST(_addr_) (const struct sockaddr *)(_addr_)
 
+#define CMP_AND_RETURN(_a_, _b_)                \
+  do {                                          \
+    if ((_a_) != (_b_)) {                       \
+      return ((_a_) < (_b_)) ? -1 : 1;          \
+    }                                           \
+  } while(0)
+
 static fd_set exec_rbits, exec_wbits, exec_ebits;
 static LIST_HEAD(fl_sockets_, fl_socket_t_) fl_sockets;
 
@@ -167,6 +174,63 @@ int fl_socket_module_dump(FILE *fd)
   }
 
   return 0;
+}
+
+int fl_sockaddr_cmp(const struct sockaddr *sa1, const struct sockaddr *sa2)
+{
+  FL_ASSERT(sa1 && sa2);
+  FL_ASSERT((sa1->sa_family == AF_INET) || (sa1->sa_family == AF_INET6) &&
+            (sa1->sa_family == AF_UNIX));
+  FL_ASSERT((sa2->sa_family == AF_INET) || (sa2->sa_family == AF_INET6) &&
+            (sa2->sa_family == AF_UNIX));
+
+  CMP_AND_RETURN(sa1->sa_family, sa2->sa_family);
+
+  if (sa1->sa_family == AF_INET) {
+    return memcmp(sa1, sa2, sizeof(struct sockaddr_in));
+  }
+
+  if (sa1->sa_family == AF_INET6) {
+    return memcmp(sa1, sa2, sizeof(struct sockaddr_in6));
+  }
+
+  if (sa1->sa_family == AF_UNIX) {
+    return memcmp(sa1, sa2, sizeof(struct sockaddr_un));
+  }
+
+  FL_ASSERT(0);
+  return -1;
+}
+
+int fl_sockaddr_nw_cmp(const struct sockaddr *sa1,
+                       const struct sockaddr *sa2,
+                       const struct sockaddr *netmask)
+{
+
+  FL_ASSERT(sa1 && sa2 && netmask);
+  FL_ASSERT((sa1->sa_family == AF_INET))
+  FL_ASSERT((sa2->sa_family == AF_INET))
+  FL_ASSERT((netmask->sa_family == AF_INET))
+
+  CMP_AND_RETURN(sa1->sa_family, sa2->sa_family);
+  CMP_AND_RETURN(sa1->sa_family, netmask->sa_family);
+
+  if (sa1->sa_family == AF_INET) {
+    struct sockaddr_in sin1, sin2, sin_mask;
+
+    memcpy(&sin1, sa1, sizeof(struct sockaddr_in));
+    memcpy(&sin2, sa2, sizeof(struct sockaddr_in));
+    memcpy(&sin_mask, netmask, sizeof(struct sockaddr_in));
+
+    CMP_AND_RETURN(ntohl(sin1.sin_addr.s_addr) &
+                   ntohl(sin_mask.sin_addr.s_addr),
+                   ntohl(sin2.sin_addr.s_addr) &
+                   ntohl(sin_mask.sin_addr.s_addr));
+    return 0;
+ }
+
+  FL_ASSERT(0);
+  return -1;
 }
 
 fl_socket_t *fl_socket_socket(fl_task_t *task, const char *name,

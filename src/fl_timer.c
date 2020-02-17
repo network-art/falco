@@ -295,7 +295,7 @@ static void fl_timer_dispatch(fl_timer_t *timer)
                 save_errno, strerror(save_errno));
   }
 
-  if (nexp > 0) {
+  if (nexp > 1) {
     FL_LOGR_ERR("Timer dispatch (%s, %s, %d) detected %llu expirations",
                 (task) ? task->name : "", timer->name, fd,
                 (unsigned long long) nexp);

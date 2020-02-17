@@ -1,7 +1,7 @@
 /*******************************************************************************
 BSD 3-Clause License
 
-Copyright (c) 2014 - 2020, NetworkArt Systems Private Limited (www.networkart.com)
+Copyright (c) 2014 - 2020, NetworkArt Systems Private Limited (www.networkart.com).
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,29 +30,20 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_BITS_H_
-#define _FL_BITS_H_
+#ifndef _FL_IF_H_
+#define _FL_IF_H_
 
-#include <sys/types.h>
+#include "falco/fl_tracevalue.h"
 
-#ifndef NBBY
-#define NBBY 8
-#endif /* NBBY */
+#define FL_IF_TRACEFLAGS(_f_) fl_trace_flags(fl_if_flags, (_f_))
 
-#define ROUNDUP2NBBY(_val_) (((_val_) + (NBBY - 1)) / NBBY) * NBBY
+/* Interface changes */
+#define FL_IFC_IN6ADDR        BITVAL(0x01)
+#define FL_IFC_INADDR         BITVAL(0x02)
+#define FL_IFC_NAME           BITVAL(0x04)
+#define FL_IFC_STATUS         BITVAL(0x08)
 
-#define FL_SET_BIT(_var_, _val_)              ((_var_) |= _val_)
-#define FL_RESET_BIT(_var_, _val_)            ((_var_) &= ~(_val_))
-#define FL_FLIP_BIT(_var_, _val_)             ((_var_) ^= (_val_))
-#define FL_TEST_BIT(_var_, _val_)             ((_var_) &  (_val_))
-#define FL_MATCH_BIT(_var_, _val_)            (((_var_) & (_val_)) == (_val_))
-#define FL_CMP_BIT(_var_, _val1_, _val2_)     (((_var_) & (_val1_)) == _val2_)
-#define FL_MATCH_BIT_MASK(_var_, _m_, _val_)  (!(((_var_) ^ (_m_)) & (_val_)))
+extern const values_t fl_if_flags[];
+extern const values_t fl_if_changes[];
 
-#ifndef BITVAL
-#define BITVAL(_b_) _b_ ## UL
-#endif /* BITVAL */
-
-typedef u_int32_t flag_t;
-
-#endif /* _FL_BITS_H_ */
+#endif /*_FL_IF_H_ */

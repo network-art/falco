@@ -75,6 +75,7 @@ include_directories(include)
 
 add_library(${PROJECT_NAME}_s STATIC
   src/fl_fds.c
+  src/fl_if.c
   src/fl_logr.c
   src/fl_process.c
   src/fl_signal.c

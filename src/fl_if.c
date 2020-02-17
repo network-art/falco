@@ -1,7 +1,7 @@
 /*******************************************************************************
 BSD 3-Clause License
 
-Copyright (c) 2014 - 2020, NetworkArt Systems Private Limited (www.networkart.com)
+Copyright (c) 2014 - 2020, NetworkArt Systems Private Limited (www.networkart.com).
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,29 +30,35 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-#ifndef _FL_BITS_H_
-#define _FL_BITS_H_
+#include <sys/ioctl.h>
+#include <net/if.h>
 
-#include <sys/types.h>
+#include "falco/fl_if.h"
 
-#ifndef NBBY
-#define NBBY 8
-#endif /* NBBY */
+const values_t fl_if_flags[] = {
+  { IFF_ALLMULTI,           "ALLMULTI"          },
+  { IFF_AUTOMEDIA,          "AUTOMEDIA"         },
+  { IFF_BROADCAST,          "BROADCAST"         },
+  { IFF_DEBUG,              "DEBUG"             },
+  { IFF_DYNAMIC,            "DYNAMIC"           },
+  { IFF_LOOPBACK,           "LOOPBACK"          },
+  { IFF_MASTER,             "MASTER"            },
+  { IFF_MULTICAST,          "MULTICAST"         },
+  { IFF_NOARP,              "NOARP"             },
+  { IFF_NOTRAILERS,         "NOTRAILERS"        },
+  { IFF_POINTOPOINT,        "POINTOPOINT"       },
+  { IFF_PORTSEL,            "PORTSEL"           },
+  { IFF_PROMISC,            "PROMISC"           },
+  { IFF_RUNNING,            "RUNNING"           },
+  { IFF_SLAVE,              "SLAVE"             },
+  { IFF_UP,                 "UP"                },
+  { 0, NULL }
+};
 
-#define ROUNDUP2NBBY(_val_) (((_val_) + (NBBY - 1)) / NBBY) * NBBY
-
-#define FL_SET_BIT(_var_, _val_)              ((_var_) |= _val_)
-#define FL_RESET_BIT(_var_, _val_)            ((_var_) &= ~(_val_))
-#define FL_FLIP_BIT(_var_, _val_)             ((_var_) ^= (_val_))
-#define FL_TEST_BIT(_var_, _val_)             ((_var_) &  (_val_))
-#define FL_MATCH_BIT(_var_, _val_)            (((_var_) & (_val_)) == (_val_))
-#define FL_CMP_BIT(_var_, _val1_, _val2_)     (((_var_) & (_val1_)) == _val2_)
-#define FL_MATCH_BIT_MASK(_var_, _m_, _val_)  (!(((_var_) ^ (_m_)) & (_val_)))
-
-#ifndef BITVAL
-#define BITVAL(_b_) _b_ ## UL
-#endif /* BITVAL */
-
-typedef u_int32_t flag_t;
-
-#endif /* _FL_BITS_H_ */
+const values_t fl_if_changes[] = {
+  { FL_IFC_IN6ADDR,         "IPv6_ADDR"         },
+  { FL_IFC_INADDR,          "IPv4_ADDR"         },
+  { FL_IFC_NAME,            "NAME"              },
+  { FL_IFC_STATUS,          "STATUS"            },
+  { 0, NULL }
+};

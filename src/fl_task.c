@@ -66,8 +66,7 @@ int fl_task_module_dump(FILE *fd)
   LIST_FOREACH(task_li, &fl_tasks, task_lc) {
     ntimers = nsockets = 0;
 
-    fprintf(fd, "%s\n", task_li->name);
-    fprintf(fd, "--------------------------------\n");
+    fprintf(fd, "Name: %s\n", task_li->name);
     fprintf(fd, "    reinit method: %s\n",
             (task_li->reinit_method) ? "yes" : "no");
     fprintf(fd, "    reinit method: %s\n",

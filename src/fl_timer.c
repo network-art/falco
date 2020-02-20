@@ -67,7 +67,6 @@ int fl_timer_module_dump(FILE *fd)
 
   LIST_FOREACH(li, &fl_timers, timer_lc) {
     fprintf(fd, "Name: %s(%d)\n", li->name, li->timerfd);
-    fprintf(fd, "------------------------------------------\n");
     if (li->task) {
       fprintf(fd, "    Task: %s\n", li->task->name);
     }
@@ -260,19 +259,28 @@ int fl_timer_delete(fl_timer_t *timer)
   return rc;
 }
 
-void fl_timers_dispatch(int *nfds, fd_set *set)
+void fl_timers_dispatch(int *nfds, fd_set *fds)
 {
   int save_nfds = *nfds;
   register fl_timer_t *timer;
+  register int timerfd;
 
   FL_ASSERT((*nfds) >= 0);
 
   LIST_FOREACH(timer, &fl_timers, timer_lc) {
-    if (FL_FD_ISSET(timer->timerfd, FL_FD_OP_READ)) {
-      (*nfds)--;
-      FD_CLR(timer->timerfd, set);
-      fl_timer_dispatch(timer);
+    timerfd = timer->timerfd;
+
+    if (!FD_ISSET(timerfd, fds)) {
+      continue;
     }
+
+    FL_ASSERT(fl_fd_isset(timerfd, FL_FD_OP_READ));
+    (*nfds)--;
+    /* We do not clear timer fd from the read operation (i.e. select_rbits).
+     * We only clear it from the exec_bits here.
+     */
+    FD_CLR(timerfd, fds);
+    fl_timer_dispatch(timer);
   }
 
   if (save_nfds && ((save_nfds - *nfds) > 0)) {

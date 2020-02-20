@@ -129,14 +129,21 @@ typedef enum fl_sockoption_e_ {
   FL_SOCKOPT_MAX = FL_SOCKOPT_SNDTIMEO,
 } fl_sockoption_e;
 
+extern int fl_socket_module_init(void);
+extern int fl_socket_module_dump(FILE *fd);
+
+extern struct sockaddr_storage *fl_sockaddr_dup(struct sockaddr_storage *dst,
+                                                const struct sockaddr_storage *src,
+                                                socklen_t srclen);
 extern int fl_sockaddr_cmp(const struct sockaddr *sa1,
                            const struct sockaddr *sa2);
 extern int fl_sockaddr_nw_cmp(const struct sockaddr *sa1,
                               const struct sockaddr *sa2,
                               const struct sockaddr *netmask);
-
-extern int fl_socket_module_init(void);
-extern int fl_socket_module_dump(FILE *fd);
+extern socklen_t fl_sockaddr_len(struct sockaddr *sa);
+extern const char *fl_sockaddr_ntop(const struct sockaddr_storage *ss,
+                                    char *dst, socklen_t size);
+extern u_int16_t fl_sockaddr_port_hbo(const struct sockaddr_storage *ss);
 
 extern fl_socket_t *fl_socket_socket(struct fl_task_t_ *task, const char *name,
                                      int domain, int type, int protocol);
@@ -163,6 +170,10 @@ extern ssize_t fl_socket_generic_send(fl_socket_t *flsk, void *buf, size_t len,
                                       socklen_t addrlen);
 
 extern void fl_socket_set_connect_complete_method(fl_socket_t *flsk, fl_socket_connect_complete_method_t connect_complete_method);
+extern void fl_socket_set_recv_method(fl_socket_t *flsk,
+                                      fl_socket_recv_method_t recv_method);
+extern void fl_socket_set_nb_recv_method(fl_socket_t *flsk,
+                                         fl_socket_nb_recv_method_t nb_recv_method);
 extern void fl_socket_set_recv_is_msg_complete_method(fl_socket_t *flsk, fl_socket_recv_is_msg_complete_method_t recv_is_msg_complete_method);
 extern void fl_socket_set_recv_complete_method(fl_socket_t *flsk, fl_socket_recv_complete_method_t recv_complete_method);
 extern void fl_socket_set_send_complete_method(fl_socket_t *flsk, fl_socket_send_complete_method_t send_complete_method);
@@ -170,86 +181,5 @@ extern void fl_socket_set_send_complete_method(fl_socket_t *flsk, fl_socket_send
 extern void fl_socket_process_reads(int *nfds, fd_set *fds);
 extern void fl_socket_process_writes(int *nfds, fd_set *fds);
 extern void fl_socket_process_connections(int *nfds, fd_set *fds);
-
-inline void FL_SOCKADDR_DUP(struct sockaddr_storage *dst,
-                            const struct sockaddr_storage *src,
-                            socklen_t srclen)
-{
-  FL_ASSERT(dst && src && srclen &&
-            (sizeof(srclen) <= sizeof(struct sockaddr_storage)));
-  FL_ASSERT((src->ss_family == AF_INET) || (src->ss_family == AF_INET6) ||
-            (src->ss_family == AF_UNIX));
-  (void) memcpy(dst, src, srclen);
-}
-
-inline socklen_t FL_SOCKADDR_LEN(struct sockaddr *sa)
-{
-  register socklen_t addrlen = 0;
-  register int sa_family = sa->sa_family;
-
-  switch(sa_family) {
-  case AF_INET: {
-    addrlen = sizeof(struct sockaddr_in);
-    break;
-  }
-  case AF_INET6: {
-    addrlen = sizeof(struct sockaddr_in6);
-    break;
-  }
-  case AF_UNIX: {
-    register struct sockaddr_un *sa_un = (struct sockaddr_un *)sa;
-    addrlen = (strlen(sa_un->sun_path) + 1) + (sizeof(sa_un) - 1);
-    break;
-  }
-  default:
-    FL_ASSERT(0);
-  }
-
-  return addrlen;
-}
-
-inline const char *FL_SOCKADDR_NTOP(const struct sockaddr_storage *ss,
-                                    char *dst, socklen_t size)
-{
-  register int ss_family = ss->ss_family;
-
-  switch(ss_family) {
-  case AF_INET: {
-    FL_ASSERT(dst && (size >= INET_ADDRSTRLEN));
-    return inet_ntop(AF_INET, &((struct sockaddr_in *)ss)->sin_addr, dst, size);
-  }
-  case AF_INET6: {
-    FL_ASSERT(dst && (size >= INET6_ADDRSTRLEN));
-    return inet_ntop(AF_INET, &((struct sockaddr_in6 *)ss)->sin6_addr, dst, size);
-  }
-  case AF_UNIX: {
-    return ((struct sockaddr_un *)ss)->sun_path;
-  }
-  default:
-    FL_ASSERT(0);
-  }
-
-  return NULL;
-}
-
-inline u_int16_t FL_SOCKADDR_PORT_HBO(const struct sockaddr_storage *ss)
-{
-  register int ss_family = ss->ss_family;
-
-  switch(ss_family) {
-  case AF_INET: {
-    return ntohs(((struct sockaddr_in *)ss)->sin_port);
-  }
-  case AF_INET6: {
-    return ntohs(((struct sockaddr_in6 *)ss)->sin6_port);
-  }
-  case AF_UNIX:
-    break;
-  default:
-    FL_ASSERT(0);
-  }
-
-  return 0;
-}
 
 #endif /* _FL_SOCKET_H_ */

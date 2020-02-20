@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "falco/fl_logr.h"
 
 #if (defined(ENABLE_ASSERTIONS))
-#define FL_ASSERT(_cond_) assert(_cond_)
+#define FL_ASSERT(_cond_) assert((_cond_))
 #else /* !ENABLE_ASSERTIONS */
 #define FL_ASSERT(_cond_)
 #endif /* !ENABLE_ASSERTIONS */      

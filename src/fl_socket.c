@@ -68,6 +68,19 @@ static const values_t fl_socket_types[] = {
   { 0, NULL }
 };
 
+/* Standard well-defined IP protocols.  */
+static const values_t fl_socket_protocols[] = {
+  { IPPROTO_ICMP,      "ICMP"      },
+  { IPPROTO_ICMPV6,    "ICMPV6"    },
+  { IPPROTO_IGMP,      "IGMP"      },
+  { IPPROTO_IP,        "IP"        },
+  { IPPROTO_IPV6,      "IPV6"      },
+  { IPPROTO_RAW,       "RAW"       },
+  { IPPROTO_TCP,       "TCP"       },
+  { IPPROTO_UDP,       "UDP"       },
+  { 0, NULL }
+};
+
 static const values_t fl_sockoptions[] = {
   { FL_SOCKOPT_NONBLOCKING,         "Non-Blocking"               },
   { FL_SOCKOPT_RCVTIMEO,            "Recv-Timeout"               },
@@ -126,20 +139,32 @@ int fl_socket_module_dump(FILE *fd)
   }
 
   LIST_FOREACH(li, &fl_sockets, socket_lc) {
+    register int sr = (fl_fd_isset(li->sockfd, FL_FD_OP_READ) ||
+                       fl_fd_isset(li->sockfd, FL_FD_OP_ACCEPT));
+    register int sw = fl_fd_isset(li->sockfd, FL_FD_OP_WRITE);
+    register int se = fl_fd_isset(li->sockfd, FL_FD_OP_EXCEPT);
+
     fprintf(fd, "Name: %s(%d)\n", li->name, li->sockfd);
-    fprintf(fd, "-----\n");
 
     if (li->task) {
       fprintf(fd, "    Task: %s\n", li->task->name);
     }
-    fprintf(fd, "    Domain %s(%d), Type %s(%d), Protocol %d\n",
+    fprintf(fd, "    Domain %s(%d), Type %s(%d), Protocol %s(%d)\n",
             fl_trace_value(fl_socket_domains, li->domain), li->domain,
             fl_trace_value(fl_socket_types, li->type), li->type,
-            li->protocol);
-    fprintf(fd, "    %s\n", fl_trace_flags(fl_sockflags, li->flags));
+            fl_trace_value(fl_socket_protocols, li->protocol), li->protocol);
+    if (li->flags) {
+      fprintf(fd, "    %s\n", fl_trace_flags(fl_sockflags, li->flags));
+    }
     fprintf(fd, "    Local address: %s, Remote address: %s\n",
             (strlen(li->local_addr)) ? li->local_addr : "None",
             (strlen(li->remote_addr)) ? li->remote_addr : "None");
+    if (sr || sw || se) {
+      fprintf(fd, "    Selected for:                %s%s%s\n",
+              (sr) ? "Read " : "",
+              (sw) ? "Write " : "",
+              (se) ? "Except" : "");
+    }
     if (li->rbuf) {
       fprintf(fd, "    Read buffer size:  %d bytes\n", (int) li->trbuf_len);
       fprintf(fd, "    Read data length:  %d bytes (current)\n", (int) li->crdata_len);
@@ -176,12 +201,94 @@ int fl_socket_module_dump(FILE *fd)
   return 0;
 }
 
+struct sockaddr_storage *fl_sockaddr_dup(struct sockaddr_storage *dst,
+                                         const struct sockaddr_storage *src,
+                                         socklen_t srclen)
+{
+  FL_ASSERT(dst && src && srclen &&
+            (sizeof(srclen) <= sizeof(struct sockaddr_storage)));
+  FL_ASSERT((src->ss_family == AF_INET) || (src->ss_family == AF_INET6) ||
+            (src->ss_family == AF_UNIX));
+  (void) memcpy(dst, src, srclen);
+  return dst;
+}
+
+socklen_t fl_sockaddr_len(struct sockaddr *sa)
+{
+  register socklen_t addrlen = 0;
+  register int sa_family = sa->sa_family;
+
+  switch(sa_family) {
+  case AF_INET: {
+    addrlen = sizeof(struct sockaddr_in);
+    break;
+  }
+  case AF_INET6: {
+    addrlen = sizeof(struct sockaddr_in6);
+    break;
+  }
+  case AF_UNIX: {
+    register struct sockaddr_un *sa_un = (struct sockaddr_un *)sa;
+    addrlen = (strlen(sa_un->sun_path) + 1) + (sizeof(sa_un) - 1);
+    break;
+  }
+  default:
+    FL_ASSERT(0);
+  }
+
+  return addrlen;
+}
+
+const char *fl_sockaddr_ntop(const struct sockaddr_storage *ss,
+                             char *dst, socklen_t size)
+{
+  register int ss_family = ss->ss_family;
+
+  switch(ss_family) {
+  case AF_INET: {
+    FL_ASSERT(dst && (size >= INET_ADDRSTRLEN));
+    return inet_ntop(AF_INET, &((struct sockaddr_in *)ss)->sin_addr, dst, size);
+  }
+  case AF_INET6: {
+    FL_ASSERT(dst && (size >= INET6_ADDRSTRLEN));
+    return inet_ntop(AF_INET, &((struct sockaddr_in6 *)ss)->sin6_addr, dst, size);
+  }
+  case AF_UNIX: {
+    return ((struct sockaddr_un *)ss)->sun_path;
+  }
+  default:
+    FL_ASSERT(0);
+  }
+
+  return NULL;
+}
+
+u_int16_t fl_sockaddr_port_hbo(const struct sockaddr_storage *ss)
+{
+  register int ss_family = ss->ss_family;
+
+  switch(ss_family) {
+  case AF_INET: {
+    return ntohs(((struct sockaddr_in *)ss)->sin_port);
+  }
+  case AF_INET6: {
+    return ntohs(((struct sockaddr_in6 *)ss)->sin6_port);
+  }
+  case AF_UNIX:
+    break;
+  default:
+    FL_ASSERT(0);
+  }
+
+  return 0;
+}
+
 int fl_sockaddr_cmp(const struct sockaddr *sa1, const struct sockaddr *sa2)
 {
   FL_ASSERT(sa1 && sa2);
-  FL_ASSERT((sa1->sa_family == AF_INET) || (sa1->sa_family == AF_INET6) &&
+  FL_ASSERT((sa1->sa_family == AF_INET) || (sa1->sa_family == AF_INET6) ||
             (sa1->sa_family == AF_UNIX));
-  FL_ASSERT((sa2->sa_family == AF_INET) || (sa2->sa_family == AF_INET6) &&
+  FL_ASSERT((sa2->sa_family == AF_INET) || (sa2->sa_family == AF_INET6) ||
             (sa2->sa_family == AF_UNIX));
 
   CMP_AND_RETURN(sa1->sa_family, sa2->sa_family);
@@ -208,9 +315,9 @@ int fl_sockaddr_nw_cmp(const struct sockaddr *sa1,
 {
 
   FL_ASSERT(sa1 && sa2 && netmask);
-  FL_ASSERT((sa1->sa_family == AF_INET))
-  FL_ASSERT((sa2->sa_family == AF_INET))
-  FL_ASSERT((netmask->sa_family == AF_INET))
+  FL_ASSERT(sa1->sa_family == AF_INET);
+  FL_ASSERT(sa2->sa_family == AF_INET);
+  FL_ASSERT(netmask->sa_family == AF_INET);
 
   CMP_AND_RETURN(sa1->sa_family, sa2->sa_family);
   CMP_AND_RETURN(sa1->sa_family, netmask->sa_family);
@@ -243,7 +350,8 @@ fl_socket_t *fl_socket_socket(fl_task_t *task, const char *name,
   FL_ASSERT((type == SOCK_DGRAM) || (type == SOCK_RAW) ||
             (type == SOCK_SEQPACKET) || (type == SOCK_STREAM));
   /* For now we don't accept any value other than 0. */
-  FL_ASSERT(protocol == 0);
+  FL_ASSERT((protocol == IPPROTO_ICMPV6) || (protocol == IPPROTO_TCP) ||
+            (protocol == IPPROTO_UDP));
   if (name) {
     FL_ASSERT(strlen(name) < FL_SOCKET_NAME_MAX_LEN);
   }
@@ -252,11 +360,13 @@ fl_socket_t *fl_socket_socket(fl_task_t *task, const char *name,
   while (((sockfd = socket(domain, type, protocol)) < 0) && retries--) {
     save_errno = errno;
 
-    FL_LOGR_ERR("Socket creation for domain %d(%s), type %d(%s), protocol %d "
-                "failed, error %d <%s>",
-                domain, fl_trace_value(fl_socket_domains, domain),
-                type, fl_trace_value(fl_socket_types, type),
-                protocol, save_errno, strerror(save_errno));
+    FL_LOGR_ERR("Socket creation for %s%s%s domain %s(%d), type %s(%d), "
+                "protocol %s(%d) failed, error %d <%s>",
+                (name) ? "\"" : "", (name) ? name : "", (name) ? "\", " : "",
+                fl_trace_value(fl_socket_domains, domain), domain,
+                fl_trace_value(fl_socket_types, type), type,
+                fl_trace_value(fl_socket_protocols, protocol), protocol,
+                save_errno, strerror(save_errno));
 
     if (save_errno == EINTR) {
       retries++;
@@ -294,7 +404,7 @@ int fl_socket_setsockopt(fl_socket_t *flsk, fl_sockoption_e option, ...)
   va_list vargs;
 
   FL_ASSERT(flsk && (flsk->sockfd >= 0));
-  FL_ASSERT((optname >= FL_SOCKOPT_MIN) && (option <= FL_SOCKOPT_MAX));
+  FL_ASSERT((option >= FL_SOCKOPT_MIN) && (option <= FL_SOCKOPT_MAX));
 
   sockfd = flsk->sockfd;
   FL_LOGR_DEBUG("Set socket (%s, %d) option %s(%d)",
@@ -440,12 +550,12 @@ int fl_socket_bind(fl_socket_t *flsk,
     int save_errno = errno;
     FL_LOGR_ERR("Socket (%s, %s, %d) bind to %s:%d failed, error %d <%s>",
                 (flsk->task) ? flsk->task->name : "", flsk->name, flsk->sockfd,
-                FL_SOCKADDR_NTOP(addr, addrstr, INET6_ADDRSTRLEN),
-                FL_SOCKADDR_PORT_HBO(addr), save_errno, strerror(save_errno));
+                fl_sockaddr_ntop(addr, addrstr, INET6_ADDRSTRLEN),
+                fl_sockaddr_port_hbo(addr), save_errno, strerror(save_errno));
     return -1;
   }
 
-  (void) FL_SOCKADDR_NTOP(addr, flsk->local_addr, FL_SOCKADDR_STR_MAX_LEN);
+  (void) fl_sockaddr_ntop(addr, flsk->local_addr, FL_SOCKADDR_STR_MAX_LEN);
   FL_SET_BIT(flsk->flags,
              (flsk->domain == AF_INET)  ? FL_SOCKF_BOUND_IN  :
              (flsk->domain == AF_INET6) ? FL_SOCKF_BOUND_IN6 :
@@ -453,8 +563,8 @@ int fl_socket_bind(fl_socket_t *flsk,
 
   FL_LOGR_INFO("Socket (%s, %s, %d) bound to %s:%d",
                (flsk->task) ? flsk->task->name : "", flsk->name, flsk->sockfd,
-               FL_SOCKADDR_NTOP(addr, addrstr, INET6_ADDRSTRLEN),
-               FL_SOCKADDR_PORT_HBO(addr));
+               fl_sockaddr_ntop(addr, addrstr, INET6_ADDRSTRLEN),
+               fl_sockaddr_port_hbo(addr));
   return 0;
 }
 
@@ -547,25 +657,25 @@ void fl_socket_generic_accept(fl_socket_t *flsk)
                           peerfd);
   if (!nflsk || (fl_socket_get_local_addr(nflsk) < 0)) {
     FL_LOGR_ERR("Closing connection from %s:%d on socket (%s, %s, %d)",
-                FL_SOCKADDR_NTOP(&addr, addrstr, INET6_ADDRSTRLEN),
-                FL_SOCKADDR_PORT_HBO(&addr),
+                fl_sockaddr_ntop(&addr, addrstr, INET6_ADDRSTRLEN),
+                fl_sockaddr_port_hbo(&addr),
                 (task) ? task->name : "", "", peerfd);
     (void) close(peerfd);
     return;
   }
 
-  FL_SOCKADDR_DUP(&nflsk->sa_remote, &addr, addrlen);
+  fl_sockaddr_dup(&nflsk->sa_remote, &addr, addrlen);
   memset(flsk->remote_addr, 0, FL_SOCKADDR_STR_MAX_LEN);
   if (((flsk->domain == AF_INET) || (flsk->domain == AF_INET6)) &&
       ((flsk->type == SOCK_DGRAM) || (flsk->type == SOCK_SEQPACKET) ||
        (flsk->type == SOCK_STREAM))) {
     sprintf(flsk->remote_addr, "%s:%d",
-            FL_SOCKADDR_NTOP(&flsk->sa_remote, flsk->remote_addr,
+            fl_sockaddr_ntop(&flsk->sa_remote, flsk->remote_addr,
                              FL_SOCKADDR_STR_MAX_LEN - 1),
-            FL_SOCKADDR_PORT_HBO(&flsk->sa_remote));
+            fl_sockaddr_port_hbo(&flsk->sa_remote));
   } else {
     sprintf(flsk->remote_addr, "%s",
-            FL_SOCKADDR_NTOP(&flsk->sa_remote, flsk->remote_addr,
+            fl_sockaddr_ntop(&flsk->sa_remote, flsk->remote_addr,
                              FL_SOCKADDR_STR_MAX_LEN - 1));
   }
 
@@ -603,8 +713,8 @@ int fl_socket_generic_connect(fl_socket_t *flsk,
     save_errno = errno;
     FL_LOGR_ERR("Attempt to connect to %s:%d on socket (%s, %s, %d) failed, "
                 "error %d <%s>",
-                FL_SOCKADDR_NTOP(addr, addrstr, sizeof(addrstr)),
-                FL_SOCKADDR_PORT_HBO(addr),
+                fl_sockaddr_ntop(addr, addrstr, sizeof(addrstr)),
+                fl_sockaddr_port_hbo(addr),
                 (task) ? task->name : "", flsk->name, flsk->sockfd,
                 save_errno, strerror(save_errno));
     return rc;
@@ -612,19 +722,19 @@ int fl_socket_generic_connect(fl_socket_t *flsk,
 
   if (fl_socket_get_local_addr(flsk) < 0) {
     FL_LOGR_ERR("Closing connection to %s:%d on socket (%s, %s, %d)",
-                FL_SOCKADDR_NTOP(addr, addrstr, INET6_ADDRSTRLEN),
-                FL_SOCKADDR_PORT_HBO(addr),
+                fl_sockaddr_ntop(addr, addrstr, INET6_ADDRSTRLEN),
+                fl_sockaddr_port_hbo(addr),
                 (task) ? task->name : "", flsk->name, flsk->sockfd);
     (void) close(flsk->sockfd);
     return -1;
   }
 
-  FL_SOCKADDR_DUP(&flsk->sa_remote, addr, addrlen);
+  fl_sockaddr_dup(&flsk->sa_remote, addr, addrlen);
   memset(flsk->remote_addr, 0, FL_SOCKADDR_STR_MAX_LEN);
   sprintf(flsk->remote_addr, "%s:%d",
-          FL_SOCKADDR_NTOP(&flsk->sa_remote, flsk->remote_addr,
+          fl_sockaddr_ntop(&flsk->sa_remote, flsk->remote_addr,
                            FL_SOCKADDR_STR_MAX_LEN - 1),
-          FL_SOCKADDR_PORT_HBO(&flsk->sa_remote));
+          fl_sockaddr_port_hbo(&flsk->sa_remote));
 
   FL_LOGR_ERR("Connected from %s -> %s on socket (%s, %s, %d)",
               flsk->local_addr, flsk->remote_addr,
@@ -715,7 +825,7 @@ void fl_socket_generic_nb_recv(fl_socket_t *flsk)
         return;
       }
 
-      FL_LOGR_ERR("Tx on socket (%s, %s, %d) failed, error %d <%s>. "
+      FL_LOGR_ERR("NBRx on socket (%s, %s, %d) failed, error %d <%s>. "
                   "recv shall not be attempted on this socket.",
                   (task) ? task->name : "", flsk->name, flsk->sockfd,
                   save_errno, strerror(save_errno));
@@ -781,7 +891,7 @@ ssize_t fl_socket_generic_send(fl_socket_t *flsk, void *buf, size_t len,
 
   FL_ASSERT(flsk && buf && len);
   /* There can be only one outstanding send buffer (for now) */
-  FL_ASSERT(!flsk->wbuf && !flsk->wrbuf_len && !flsk->cwdata_len);
+  FL_ASSERT(!flsk->wbuf && !flsk->twbuf_len && !flsk->cwdata_len);
   if (FL_TEST_BIT(flsk->flags, FL_SOCKF_NONBLOCKING)) {
     FL_ASSERT(flsk->nb_send_method && flsk->send_complete_method &&
               flsk->send_error_method);
@@ -795,7 +905,7 @@ ssize_t fl_socket_generic_send(fl_socket_t *flsk, void *buf, size_t len,
 
   if (FL_TEST_BIT(flsk->flags, FL_SOCKF_NONBLOCKING)) {
     if ((flsk->type == SOCK_DGRAM) || (flsk->type == SOCK_RAW)) {
-      FL_SOCKADDR_DUP(&flsk->wbuf_dest_addr, dest_addr, addrlen);
+      fl_sockaddr_dup(&flsk->wbuf_dest_addr, dest_addr, addrlen);
     }
 
     /* We will set the fd for writing and return. The process_sockets shall take
@@ -834,7 +944,7 @@ void fl_socket_generic_nb_send(fl_socket_t *flsk)
                     FL_TEST_BIT(flsk->flags, FL_SOCKF_NONBLOCKING) ?
                     MSG_DONTWAIT : 0,
                     SA_CAST(&flsk->wbuf_dest_addr),
-                    FL_SOCKADDR_LEN(SA_CAST(&flsk->wbuf_dest_addr)));
+                    fl_sockaddr_len(SA_CAST(&flsk->wbuf_dest_addr)));
     } else if (flsk->type == SOCK_RAW) {
       wlen = sendmsg(flsk->sockfd, (const struct msghdr *) flsk->wbuf,
                     FL_TEST_BIT(flsk->flags, FL_SOCKF_NONBLOCKING) ?
@@ -909,17 +1019,17 @@ int fl_socket_select(fd_set **rfds, fd_set **wfds, fd_set **efds)
   FL_ASSERT(rfds && wfds && efds);
   *rfds = *wfds = *efds = NULL;
 
-  if (FL_FDS_ANYFDS_SET(FL_FD_OP_READ)) {
+  if (fl_fds_anyfds_set(FL_FD_OP_READ)) {
     *rfds = &exec_rbits;
     fdset = fl_fds_get_set(FL_FD_OP_READ);
     memcpy(*rfds, &fdset->fd_bits, sizeof(fd_set));
   }
-  if (FL_FDS_ANYFDS_SET(FL_FD_OP_WRITE)) {
+  if (fl_fds_anyfds_set(FL_FD_OP_WRITE)) {
     *wfds = &exec_wbits;
     fdset = fl_fds_get_set(FL_FD_OP_WRITE);
     memcpy(*wfds, &fdset->fd_bits, sizeof(fd_set));
   }
-  if (FL_FDS_ANYFDS_SET(FL_FD_OP_EXCEPT)) {
+  if (fl_fds_anyfds_set(FL_FD_OP_EXCEPT)) {
     *efds = &exec_ebits;
     fdset = fl_fds_get_set(FL_FD_OP_EXCEPT);
     memcpy(*efds, &fdset->fd_bits, sizeof(fd_set));
@@ -959,14 +1069,19 @@ void fl_socket_process_reads(int *nfds, fd_set *fds)
       continue;
     }
 
-    FL_ASSERT(FL_FD_ISSET(sockfd, FL_FD_OP_READ));
+    FL_ASSERT(fl_fd_isset(sockfd, FL_FD_OP_READ));
     FL_ASSERT(li->nb_recv_method || li->accept_method);
 
+    /* We only handle the here. New connections (via accept methods) are
+     * handled in process_connections.
+     */
     if (li->nb_recv_method) {
       /* Clear the fd because we are going to process it now. If the app wants
        * to read again, then it will have to set it again.
        */
       FL_FD_CLR(sockfd, FL_FD_OP_READ);
+      /* Clear the fd from the exec_rbits */
+      FD_CLR(sockfd, fds);
       (*nfds)--;
       li->nb_recv_method(li);
     }
@@ -991,10 +1106,11 @@ void fl_socket_process_writes(int *nfds, fd_set *fds)
       continue;
     }
 
-    FL_ASSERT(FL_FD_ISSET(sockfd, FL_FD_OP_WRITE));
+    FL_ASSERT(fl_fd_isset(sockfd, FL_FD_OP_WRITE));
     FL_ASSERT(li->nb_send_method);
 
-    FL_FD_CLR(sockfd, FL_FD_OP_READ);
+    FL_FD_CLR(sockfd, FL_FD_OP_WRITE);
+    FD_CLR(sockfd, fds);
     (*nfds)--;
     li->nb_send_method(li);
   }
@@ -1018,10 +1134,11 @@ void fl_socket_process_connections(int *nfds, fd_set *fds)
       continue;
     }
 
-    FL_ASSERT(FL_FD_ISSET(sockfd, FL_FD_OP_ACCEPT));
+    FL_ASSERT(fl_fd_isset(sockfd, FL_FD_OP_ACCEPT));
     FL_ASSERT(li->accept_method);
 
     FL_FD_CLR(sockfd, FL_FD_OP_ACCEPT);
+    FD_CLR(sockfd, fds);
     (*nfds)--;
     li->accept_method(li);
   }
@@ -1037,11 +1154,17 @@ static fl_socket_t *fl_socket_alloc(fl_task_t *task, const char *name,
 {
   fl_socket_t *flsk;
 
+  if (name && (strlen(name) >= FL_SOCKET_NAME_MAX_LEN)) {
+    FL_ASSERT(0);
+    return NULL;
+  }
+
   FL_ALLOC(fl_socket_t, 1, flsk, "Socket");
   if (!flsk) {
     return NULL;
   }
 
+  strcpy(flsk->name, name);
   flsk->domain = domain;
   flsk->type = type;
   flsk->protocol = protocol;
@@ -1116,12 +1239,12 @@ static int fl_socket_get_local_addr(fl_socket_t *flsk)
       ((flsk->type == SOCK_DGRAM) || (flsk->type == SOCK_SEQPACKET) ||
        (flsk->type == SOCK_STREAM))) {
     sprintf(flsk->local_addr, "%s:%d",
-            FL_SOCKADDR_NTOP(&flsk->sa_local, flsk->local_addr,
+            fl_sockaddr_ntop(&flsk->sa_local, flsk->local_addr,
                              FL_SOCKADDR_STR_MAX_LEN - 1),
-            FL_SOCKADDR_PORT_HBO(&flsk->sa_local));
+            fl_sockaddr_port_hbo(&flsk->sa_local));
   } else {
     sprintf(flsk->local_addr, "%s",
-            FL_SOCKADDR_NTOP(&flsk->sa_local, flsk->local_addr,
+            fl_sockaddr_ntop(&flsk->sa_local, flsk->local_addr,
                              FL_SOCKADDR_STR_MAX_LEN - 1));
   }
 
@@ -1218,8 +1341,8 @@ static ssize_t fl_socket_sendto(fl_socket_t *flsk, const void *buf, size_t len,
   if (rc == -1) {
     FL_LOGR_ERR("sendto %s:%d (%d bytes) on socket (%s, %s, %d) failed, "
                 "error %d <%s>",
-                FL_SOCKADDR_NTOP(dest_addr, addrstr, INET6_ADDRSTRLEN),
-                FL_SOCKADDR_PORT_HBO(dest_addr),
+                fl_sockaddr_ntop(dest_addr, addrstr, INET6_ADDRSTRLEN),
+                fl_sockaddr_port_hbo(dest_addr),
                 (int) len, (flsk->task) ? flsk->task->name : "", flsk->name,
                 flsk->sockfd, save_errno, strerror(save_errno));
   }
@@ -1266,9 +1389,9 @@ static ssize_t fl_socket_send(fl_socket_t *flsk, const void *buf, size_t len)
   if (rc == -1) {
     FL_LOGR_ERR("send to %s:%d (%d bytes) on socket (%s, %s, %d) failed, "
                 "error %d <%s>",
-                FL_SOCKADDR_NTOP(&flsk->sa_remote, addrstr,
+                fl_sockaddr_ntop(&flsk->sa_remote, addrstr,
                                  INET6_ADDRSTRLEN),
-                FL_SOCKADDR_PORT_HBO(&flsk->sa_remote),
+                fl_sockaddr_port_hbo(&flsk->sa_remote),
                 (int) len,
                 (flsk->task) ? flsk->task->name : "", flsk->name, flsk->sockfd,
                 save_errno, strerror(save_errno));

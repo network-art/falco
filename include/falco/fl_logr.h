@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _FL_LOGR_H_
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <syslog.h>
 
 #define LOG_PRIORITY_CMP(_log_prio_) (_log_prio_ <= cfg_log_priority)
@@ -102,6 +103,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern void fl_logr_openlog(const char *);
 extern void fl_logr_closelog(const char *);
 extern void fl_logr_cfg_priority(int);
+extern void fl_logr_log(int, const char *, ...);
+extern void fl_logr_vlog(int, const char *, va_list);
 
 extern int cfg_log_priority;
 

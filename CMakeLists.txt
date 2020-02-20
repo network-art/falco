@@ -36,7 +36,7 @@ enable_language(C)
 
 option(BUILD_TESTS "Build unit tests" OFF)
 option(ENABLE_CC_DEBUG_SYMBOLS "Produce debugging information for GDB" ON)
-option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done by GCC" ON)
+option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done by GCC" OFF)
 option(ENABLE_ASSERTIONS "Enable assert calls" ON)
 
 if(ENABLE_CC_DEBUG_SYMBOLS)
@@ -45,6 +45,12 @@ endif()
 
 if(ENABLE_CC_OPTIMIZATION)
   add_compile_options(-O3)
+else()
+  add_compile_options(-O0)
+endif()
+
+if(ENABLE_ASSERTIONS)
+  add_compile_options(-DENABLE_ASSERTIONS)
 endif()
 
 add_compile_options(

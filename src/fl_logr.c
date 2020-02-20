@@ -31,15 +31,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include "falco/fl_logr.h"
+#include "falco/fl_tracevalue.h"
 
 int cfg_log_priority = LOG_INFO;
 
-void fl_logr_openlog(const char *ident) {
+static const values_t syslog_priorities[] = {
+  { LOG_EMERG,   "Emergency" },
+  { LOG_ALERT,   "Alert"     },
+  { LOG_CRIT,    "Critical"  },
+  { LOG_ERR,     "Error"     },
+  { LOG_WARNING, "Warning"   },
+  { LOG_NOTICE,  "Notice"    },
+  { LOG_INFO,    "Info"      },
+  { LOG_DEBUG,   "Debug"     },
+  { 0, NULL }
+};
+
+void fl_logr_openlog(const char *ident)
+{
   openlog(ident, LOG_CONS | LOG_NDELAY | LOG_PID, LOG_LOCAL0);
   FL_LOGR_INFO("Logging started for %s", ident);
 }
 
-void fl_logr_closelog(const char *ident) {
+void fl_logr_closelog(const char *ident)
+{
   openlog(ident, LOG_CONS | LOG_NDELAY | LOG_PID, LOG_LOCAL0);
   FL_LOGR_INFO("Logging stopped for %s", ident);
 }
@@ -51,7 +66,27 @@ void fl_logr_cfg_priority(int priority)
     return;
   }
 
-  FL_LOGR_INFO("Syslog priority configuration changed (from %d) to (%d)",
-               cfg_log_priority, priority);
-  cfg_log_priority = priority;
+  if (cfg_log_priority != priority) {
+    FL_LOGR_INFO("Log priority configuration changed from %s(%d) -> %s(%d)",
+                 fl_trace_value(syslog_priorities, cfg_log_priority),
+                 cfg_log_priority,
+                 fl_trace_value(syslog_priorities, priority), priority);
+    cfg_log_priority = priority;
+  }
+}
+
+void fl_logr_log(int priority, const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  fl_logr_vlog(priority, format, args);
+  va_end(args);
+}
+
+void fl_logr_vlog(int priority, const char *format, va_list args)
+{
+  if (LOG_PRIORITY_CMP(priority)) {
+    vsyslog(priority, format, args);
+  }
 }

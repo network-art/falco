@@ -73,3 +73,15 @@ void fl_fds_set_max_fd(int fd)
     max_fd_number = fd;
   }
 }
+
+int fl_fds_anyfds_set(fl_fd_op_e op)
+{
+  fl_fd_set_t *fdset = fl_fds_get_set(op);
+  return (fdset->nfds > 0);
+}
+
+int fl_fd_isset(int fd, fl_fd_op_e op)
+{
+  register fl_fd_set_t *fdset = fl_fds_get_set(op);
+  return FD_ISSET(fd, &fdset->fd_bits);
+}

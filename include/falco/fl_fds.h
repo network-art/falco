@@ -82,20 +82,9 @@ typedef struct fl_fd_set_t_ {
 } fl_fd_set_t;
 
 extern fl_fd_set_t *fl_fds_get_set(fl_fd_op_e op);
-
-inline int FL_FD_ISSET(int fd, fl_fd_op_e op)
-{
-  register fl_fd_set_t *fdset = fl_fds_get_set(op);
-  return FD_ISSET(fd, &fdset->fd_bits);
-}
-
-inline int FL_FDS_ANYFDS_SET(fl_fd_op_e op)
-{
-  fl_fd_set_t *fdset = fl_fds_get_set(op);
-  return (fdset->nfds > 0);
-}
-
 extern int fl_fds_get_max_fd(void);
 extern void fl_fds_set_max_fd(int fd);
+extern int fl_fds_anyfds_set(fl_fd_op_e op);
+extern int fl_fd_isset(int fd, fl_fd_op_e op);
 
 #endif /* _FL_FDS_H_ */

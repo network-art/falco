@@ -68,10 +68,12 @@ int fl_timer_module_dump(FILE *fd)
   LIST_FOREACH(li, &fl_timers, timer_lc) {
     fprintf(fd, "Name: %s(%d)\n", li->name, li->timerfd);
     if (li->task) {
-      fprintf(fd, "    Task: %s\n", li->task->name);
+      fprintf(fd, "      Task: %s\n", li->task->name);
     }
-    fprintf(fd, "    when: %d seconds, interval: %d seconds\n",
-            li->fire_when, li->fire_interval);
+    fprintf(fd, "      when: %d seconds, interval: %d seconds, %s\n",
+            li->fire_when, li->fire_interval,
+            fl_fd_isset(li->timerfd, FL_FD_OP_READ) ? "armed" : "disarmed");
+    fprintf(fd, "      %d dispatches\n", li->ndispatches);
   }
 
   return 0;
@@ -161,7 +163,7 @@ void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
   return timer;
 }
 
-int fl_timer_start(fl_timer_t *timer)
+int fl_timer_start(fl_timer_t *timer, void *app_data)
 {
   fl_task_t *task;
 
@@ -172,6 +174,14 @@ int fl_timer_start(fl_timer_t *timer)
   }
 
   task = timer->task;
+
+  if (app_data) {
+    if (timer->app_data) {
+      FL_LOGR_NOTICE("Timer (%s, %s, %d) application data overwritten",
+                     (task) ? task->name : "", timer->name, timer->timerfd);
+    }
+    timer->app_data = app_data;
+  }
 
   timer->its.it_value.tv_sec = timer->fire_when;
   timer->its.it_interval.tv_sec = timer->fire_interval;
@@ -198,6 +208,9 @@ int fl_timer_stop(fl_timer_t *timer)
     FL_LOGR_ERR("Request to stop an invalid (NULL) timer");
     return -1;
   }
+
+  FL_ASSERT(fl_fd_isset(timer->timerfd, FL_FD_OP_READ));
+  FL_FD_CLR(timer->timerfd, FL_FD_OP_READ);
 
   task = timer->task;
 
@@ -312,6 +325,7 @@ static void fl_timer_dispatch(fl_timer_t *timer)
   FL_LOGR_DEBUG("Timer dispatch (%s, %s, %d) method started",
                 (task) ? task->name : "", timer->name, fd);
   timer->timer_method(timer->name, timer->app_data);
+  timer->ndispatches++;
   FL_LOGR_DEBUG("Timer dispatch (%s, %s, %d) method completed",
                 (task) ? task->name : "", timer->name, fd);
 }

@@ -57,6 +57,9 @@ typedef struct fl_timer_t_ {
   int timerfd;
   struct itimerspec its;
   fl_task_t *task;
+
+  /* Stats */
+  u_int32_t ndispatches;
 } fl_timer_t;
 
 extern int fl_timer_module_init(void);
@@ -65,7 +68,7 @@ extern int fl_timer_module_dump(FILE *fd);
 extern void *fl_timer_create(fl_task_t *task, int fire_when, int fire_interval,
                              fl_app_timer_method_t timer_method,
                              const char *timer_name, void *app_data);
-extern int fl_timer_start(fl_timer_t *timer);
+extern int fl_timer_start(fl_timer_t *timer, void *app_data);
 extern int fl_timer_stop(fl_timer_t *timer);
 extern int fl_timer_delete(fl_timer_t *timer);
 

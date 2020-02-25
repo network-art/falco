@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "falco/fl_timer.h"
 #include "falco/fl_task.h"
 #include "falco/fl_socket.h"
+#include "falco/fl_if.h"
 #include "falco/fl_process.h"
 
 int fl_init(void)
@@ -61,6 +62,11 @@ int fl_init(void)
     FL_LOGR_CRIT("Falco Task module initialization failed");
     return -1;
   }
+  if (fl_if_module_init() < 0) {
+    FL_LOGR_CRIT("Falco Interface module initialization failed");
+    return -1;
+  }
+  fl_if_dump_all(NULL);
 
   return 0;
 }

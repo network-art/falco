@@ -290,7 +290,7 @@ int fl_if_get_mac_address(const char *if_name, u_int8_t *addr)
       break;
     }
 
-    memcpy(addr, &ifr.ifr_hwaddr.sa_data, sizeof(ifr.ifr_hwaddr.sa_data));
+    memcpy(addr, &ifr.ifr_hwaddr.sa_data, ETH_ALEN);
   } while(0);
 
   if (sockfd >= 0) {

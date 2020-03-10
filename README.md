@@ -106,6 +106,96 @@ For example,
 
 A static library archive (`${DESTDIR}/lib/libfalco_s.a`) is available for the applications to link with. Header file are installed in `${DESTDIR}/include`.
 
+The following code shows how apps can initialize with Falco library.
+
+```c
+fl_logr_openlog("YOUR_APP_NAME");
+
+if (getuid()) {
+  FL_LOGR_CRIT("%s must be run as root or with sudo privileges, exiting.\n",
+               progname);
+  break;
+}
+
+if (getppid() == 1) {
+  daemonize = FALSE;
+  FL_LOGR_INFO("%s was started either via /etc/inittab or systemctl, "
+               "will not daemonize", progname);
+}
+
+if (daemonize) {
+  fl_process_daemonize();
+}
+
+pid_fd = fl_process_open_pid_file(progname);
+if (pid_fd < 0) {
+  FL_LOGR_CRIT("Could not open PID file or store PID, exiting.\n");
+  break;
+}
+
+if (fl_signal_register_handlers(sighandlers) < 0) {
+  FL_LOGR_CRIT("Signal handlers registrations failed, exiting.");
+  break;
+}
+
+if (fl_init() < 0) {
+  FL_LOGR_CRIT("Falco library initialization failed, exiting.");
+  break;
+}
+```
+
+ The following code shows how apps can use Falco in their main loop.
+
+```c
+static void app_main_loop()
+{
+  int nfds_fired;
+  fd_set *rfds, *wfds, *efds;
+
+  while (TRUE) {
+    /* Sample set of signals to be blocked */
+    int block_signals[] = { SIGUSR1, SIGUSR2, 0 };
+    int signals_blocked = 0;
+    sigset_t signals_blockset;
+
+    /* select() comes here */
+    nfds_fired = fl_socket_select(&rfds, &wfds, &efds);
+    if (nfds_fired < 0) {
+      FL_LOGR_EMERG("Sockets select() fired with error, exiting.");
+      app_shutdown();
+    }
+
+    /* Block signals here */
+    signals_blocked = fl_signals_block(block_signals, &signals_blockset);
+
+    /* Process timer expirations */
+    fl_timers_dispatch(&nfds_fired, rfds);
+
+    /* Process sockets ready for read */
+    if (nfds_fired) {
+      fl_socket_process_reads(&nfds_fired, rfds);
+    }
+
+    /* Process sockets ready for write */
+    if (nfds_fired) {
+      fl_socket_process_writes(&nfds_fired, wfds);
+    }
+
+    /* Process sockets ready for accept */
+    if (nfds_fired) {
+      fl_socket_process_connections(&nfds_fired, rfds);
+    }
+
+    /* Unblock signals that were previously blocked */
+    if (signals_blocked) {
+      (void) fl_signals_unblock(&signals_blockset);
+    }
+  }
+}
+```
+
+
+
 # Roadmap
 
 - (Re)Introduce the unit testing code.

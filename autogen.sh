@@ -1,3 +1,4 @@
+#!/bin/bash
 # BSD 3-Clause License
 #
 # Copyright (c) 2020, NetworkArt Systems Private Limited (www.networkart.com)
@@ -28,77 +29,5 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-project(falco)
-# CMake minimum required version is that Ubuntu Xenial default installation
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-
-enable_language(C)
-
-option(BUILD_TESTS "Build unit tests" OFF)
-option(ENABLE_CC_DEBUG_SYMBOLS "Produce debugging information for GDB" ON)
-option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done by GCC" OFF)
-option(ENABLE_ASSERTIONS "Enable assert calls" ON)
-
-if(ENABLE_CC_DEBUG_SYMBOLS)
-  add_compile_options(-g)
-endif()
-
-if(ENABLE_CC_OPTIMIZATION)
-  add_compile_options(-O3)
-else()
-  add_compile_options(-O0)
-endif()
-
-if(ENABLE_ASSERTIONS)
-  add_compile_options(-DENABLE_ASSERTIONS)
-endif()
-
-add_compile_options(
-	-Wall
-	-Wcast-align
-	-Werror
-	-Wextra
-	-Wformat
-	-Wformat-security
-	-Wno-format-zero-length
-	-Wno-unused-parameter
-	-Wsign-compare
-	-Wwrite-strings
-	-Wno-variadic-macros
-	-fdiagnostics-show-option
-	-pedantic
-)
-
-if(NOT DEFINED INCLUDE_INSTALL_PREFIX)
-  set(INCLUDE_INSTALL_PREFIX "include")
-endif()
-
-if(NOT DEFINED LIBRARY_INSTALL_DIR)
-  set(LIBRARY_INSTALL_DIR "lib")
-endif()
-
-include_directories(include)
-
-add_library(${PROJECT_NAME} STATIC
-  src/fl_fds.c
-  src/fl_if.c
-  src/fl_logr.c
-  src/fl_process.c
-  src/fl_signal.c
-  src/fl_socket.c
-  src/fl_task.c
-  src/fl_timer.c
-  src/fl_tracevalue.c
-)
-
-install(
-  DIRECTORY "include/falco"
-  DESTINATION ${INCLUDE_INSTALL_PREFIX}
-	FILES_MATCHING PATTERN "*.h"
-)
-
-install(TARGETS
-  ${PROJECT_NAME}_s
-  ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR}
-  LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
-)
+autoreconf --force --install -I m4
+rm -Rf autom4te.cache

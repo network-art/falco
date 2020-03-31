@@ -28,77 +28,54 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-project(falco)
-# CMake minimum required version is that Ubuntu Xenial default installation
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+AC_INIT([falco], [0.2], [info@networkart.com])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
 
-enable_language(C)
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)], [])
+AM_PROG_AR
 
-option(BUILD_TESTS "Build unit tests" OFF)
-option(ENABLE_CC_DEBUG_SYMBOLS "Produce debugging information for GDB" ON)
-option(ENABLE_CC_OPTIMIZATION "Enable optimizations that can be done by GCC" OFF)
-option(ENABLE_ASSERTIONS "Enable assert calls" ON)
+AC_SUBST(FALCO_MAJOR_VERSION, 0)
+AC_SUBST(FALCO_MINOR_VERSION, 2)
+AC_SUBST(FALCO_PATCH_VERSION, 0)
 
-if(ENABLE_CC_DEBUG_SYMBOLS)
-  add_compile_options(-g)
-endif()
+CFLAGS="${CFLAGS} -Wall -Werror"
 
-if(ENABLE_CC_OPTIMIZATION)
-  add_compile_options(-O3)
-else()
-  add_compile_options(-O0)
-endif()
+# Checks for programs
+AC_PROG_CC
+LT_INIT
 
-if(ENABLE_ASSERTIONS)
-  add_compile_options(-DENABLE_ASSERTIONS)
-endif()
+# Checks for header files
+AC_CHECK_HEADERS([arpa/inet.h \
+  assert.h \
+  features.h \
+  limits.h \
+  linux/if_ether.h \
+  net/if.h \
+  netinet/in.h \
+  paths.h signal.h \
+  stdarg.h \
+  stdio.h \
+  stdlib.h \
+  sys/param.h \
+  sys/queue.h \
+  sys/select.h \
+  sys/socket.h \
+  sys/timerfd.h \
+  sys/types.h \
+  sys/un.h \
+  syslog.h \
+])
 
-add_compile_options(
-	-Wall
-	-Wcast-align
-	-Werror
-	-Wextra
-	-Wformat
-	-Wformat-security
-	-Wno-format-zero-length
-	-Wno-unused-parameter
-	-Wsign-compare
-	-Wwrite-strings
-	-Wno-variadic-macros
-	-fdiagnostics-show-option
-	-pedantic
-)
+# Checks for typedefs, structures and compiler characteristics
 
-if(NOT DEFINED INCLUDE_INSTALL_PREFIX)
-  set(INCLUDE_INSTALL_PREFIX "include")
-endif()
+# Checks for library functions
+AC_CHECK_FUNCS([malloc])
 
-if(NOT DEFINED LIBRARY_INSTALL_DIR)
-  set(LIBRARY_INSTALL_DIR "lib")
-endif()
-
-include_directories(include)
-
-add_library(${PROJECT_NAME} STATIC
-  src/fl_fds.c
-  src/fl_if.c
-  src/fl_logr.c
-  src/fl_process.c
-  src/fl_signal.c
-  src/fl_socket.c
-  src/fl_task.c
-  src/fl_timer.c
-  src/fl_tracevalue.c
-)
-
-install(
-  DIRECTORY "include/falco"
-  DESTINATION ${INCLUDE_INSTALL_PREFIX}
-	FILES_MATCHING PATTERN "*.h"
-)
-
-install(TARGETS
-  ${PROJECT_NAME}_s
-  ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR}
-  LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR}
-)
+AC_CONFIG_FILES([Makefile \
+  include/falco/Makefile \
+  src/Makefile \
+  src/falco.pc \
+])
+AC_OUTPUT

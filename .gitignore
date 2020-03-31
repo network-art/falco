@@ -2,6 +2,21 @@
 *~
 
 # Build, Staging and Installation areas
+.deps/
+.libs/
+/aclocal.m4
+/ar-lib
+/autom4te.cache
+/build-aux/
+/config.*
+/configure
+/depcomp
+/install-sh
+/libtool
+/ltmain.sh
+/missing
+Makefile
+Makefile.in
 build
 install
 stage
@@ -29,6 +44,7 @@ stage
 *.a
 *.la
 *.lo
+*.pc
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -49,6 +65,7 @@ stage
 *.su
 *.idb
 *.pdb
+*.log
 
 # Kernel Module Compile Results
 *.mod*

@@ -36,5 +36,5 @@ includedir=@includedir@
 Name: falco
 Description: Falco Library
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lfalco_s
+Libs: -L${libdir} -lfalco
 Cflags: -I${includedir}

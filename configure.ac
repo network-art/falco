@@ -31,6 +31,7 @@
 AC_INIT([falco], [0.2], [info@networkart.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
+AC_PREFIX_DEFAULT(/usr)
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)], [])
@@ -74,7 +75,7 @@ AC_CHECK_HEADERS([arpa/inet.h \
 AC_CHECK_FUNCS([malloc])
 
 AC_CONFIG_FILES([Makefile \
-  include/falco/Makefile \
+  include/Makefile \
   src/Makefile \
   src/falco.pc \
 ])

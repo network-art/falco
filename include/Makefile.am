@@ -29,4 +29,17 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 MAINTAINERCLEANFILES = Makefile.in
-nobase_include_HEADERS = fl_bits.h fl_defs.h fl_fds.h fl_if.h fl_logr.h fl_process.h fl_signal.h fl_socket.h fl_stdlib.h fl_task.h fl_timer.h fl_tracevalue.h semver.h
+nobase_include_HEADERS = \
+	falco/fl_bits.h \
+	falco/fl_defs.h \
+	falco/fl_fds.h \
+	falco/fl_if.h \
+	falco/fl_logr.h \
+	falco/fl_process.h \
+	falco/fl_signal.h \
+	falco/fl_socket.h \
+	falco/fl_stdlib.h \
+	falco/fl_task.h \
+	falco/fl_timer.h \
+	falco/fl_tracevalue.h \
+	falco/semver.h

@@ -1,0 +1,18 @@
+language: c
+
+arch:
+  - amd64
+
+os:
+  - linux
+
+dist:
+  - xenial
+
+compiler:
+  - gcc
+
+script:
+  - cd ${TRAVIS_BUILD_DIR}
+  - ./autogen.sh
+  - make

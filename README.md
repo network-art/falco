@@ -2,6 +2,8 @@ Falco is a collection of modules that help engineers quickly develop network-bas
 
 [TOC]
 
+[![Build Status](https://travis-ci.org/network-art/falco.svg?branch=master)](https://travis-ci.org/network-art/falco)
+
 # About Falco Library
 
 Falco is the reincarnation of the erstwhile SVUtils ([**S**upport**V**antage](https://networkart.com) Utils) library that we built for our [product SupportVantage](https://networkart.com/products/supportvantage). The bird family "Falco Peregrinus" is the inspiration for the name "Falco". [Peregrine Falcon](https://en.wikipedia.org/wiki/Peregrine_falcon), the fastest bird, belongs to this family.

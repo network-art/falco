@@ -6,8 +6,7 @@ arch:
 os:
   - linux
 
-dist:
-  - xenial
+dist: xenial
 
 compiler:
   - gcc
@@ -15,4 +14,5 @@ compiler:
 script:
   - cd ${TRAVIS_BUILD_DIR}
   - ./autogen.sh
+  - ./configure
   - make

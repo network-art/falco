@@ -12,7 +12,19 @@ compiler:
   - gcc
 
 script:
+  - export FALCO_BUILD_DIR=${TRAVIS_BUILD_DIR}/autotools/build/${TRAVIS_CPU_ARCH}-${TRAVIS_OS_NAME}-${TRAVIS_COMPILER}
+  - export FALCO_INSTALL_DIR=${TRAVIS_BUILD_DIR}/autotools/install/${TRAVIS_CPU_ARCH}-${TRAVIS_OS_NAME}-${TRAVIS_COMPILER}
+  - mkdir -p ${FALCO_BUILD_DIR}
   - cd ${TRAVIS_BUILD_DIR}
   - ./autogen.sh
-  - ./configure
+  - cd ${FALCO_BUILD_DIR}
+  - ${TRAVIS_BUILD_DIR}/configure
   - make
+  - make DESTDIR=${FALCO_INSTALL_DIR} install
+  - export FALCO_BUILD_DIR=${TRAVIS_BUILD_DIR}/cmake/build/${TRAVIS_CPU_ARCH}-${TRAVIS_OS_NAME}-${TRAVIS_COMPILER}
+  - export FALCO_INSTALL_DIR=${TRAVIS_BUILD_DIR}/cmake/install/${TRAVIS_CPU_ARCH}-${TRAVIS_OS_NAME}-${TRAVIS_COMPILER}
+  - mkdir -p ${FALCO_BUILD_DIR}
+  - cd ${FALCO_BUILD_DIR}
+  - cmake -DCMAKE_INSTALL_PREFIX=/usr ${TRAVIS_BUILD_DIR}
+  - make
+  - make DESTDIR=${FALCO_INSTALL_DIR} install

@@ -1,8 +1,16 @@
-Falco is a collection of modules that help engineers quickly develop network-based applications in C. Falco helps build high-performance applications. Applications that run on embedded devices, IoT gateways, desktops and servers.
-
-[TOC]
+Falco is a collection of modules that help engineers quickly develop embedded and network-based applications in C. Falco helps build high-performance applications. Applications that run on embedded devices, IoT gateways, desktops and servers.
 
 [![Build Status](https://travis-ci.org/network-art/falco.svg?branch=master)](https://travis-ci.org/network-art/falco)
+
+#### Contents
+------
+
+1. [About Falco Library](README.md#about-falco-library)
+2. [Modules in Falco](README.md#modules-in-falco)
+3. [Coding style and conventions](README.md#style-and-code-conventions)
+4. [Building](README.md#building)
+5. [Usage](README.md#usage)
+6. [Roadmap](README.md#roadmap)
 
 # About Falco Library
 
@@ -92,9 +100,11 @@ Falco does not provide definitions for basic data types (such as character, 16-b
 
 Falco employs `assert()` (via `FL_ASSERT`) extensively to help engineers catch bugs and mistakes at the earliest. Apps can also use `FL_ASSERT()`.
 
-# Building and Usage
+# Building
 
-Use CMake to build Falco for different build platforms and hosts.
+Falco supports native and cross-platform builds. GNU Autotools, and cmake based build methods are supported.
+
+## Build using cmake
 
 For example,
 
@@ -104,95 +114,145 @@ For example,
 % cmake -DCMAKE_INSTALL_PREFIX=/usr ../..
 % make
 % make install
+# You can also specify a destination directory for installation. For example, make DESTDIR=<destination-directory> install.
 ```
 
-A static library archive (`${DESTDIR}/lib/libfalco_s.a`) is available for the applications to link with. Header file are installed in `${DESTDIR}/include`.
 
-The following code shows how apps can initialize with Falco library.
+
+## Build using GNU Autotools method
+
+For example,
+
+```bash
+% ./autogen.sh
+% mkdir -p build/${TOOLCHAIN}
+% cd build/${TOOLCHAIN}
+% ../../configure
+% make
+% make install
+# You can also specify a destination directory for installation. For example, make DESTDIR=<destination-directory> install.
+```
+
+A static library archive (`${DESTDIR}/usr/lib/libfalco.a`) is available for the applications to link with. Header files are installed in `${DESTDIR}/usr/include`.
+
+# Usage
+
+The following code snippet shows how apps can initialize with Falco library.
 
 ```c
-fl_logr_openlog("YOUR_APP_NAME");
+do {
+	fl_logr_openlog("YOUR_APP_NAME");
 
-if (getuid()) {
-  FL_LOGR_CRIT("%s must be run as root or with sudo privileges, exiting.\n",
-               progname);
-  break;
-}
+	if (getuid()) {
+        FL_LOGR_CRIT("%s must be run as root or with sudo privileges, exiting.\n",
+                     progname);
+		break;
+	}
 
-if (getppid() == 1) {
-  daemonize = FALSE;
-  FL_LOGR_INFO("%s was started either via /etc/inittab or systemctl, "
-               "will not daemonize", progname);
-}
+	if (getppid() == 1) {
+		daemonize = FALSE;
+		FL_LOGR_INFO("%s was started either via /etc/inittab or "
+                     "systemctl, will not daemonize", progname);
+	}
 
-if (daemonize) {
-  fl_process_daemonize();
-}
+	if (daemonize) {
+		fl_process_daemonize();
+	}
 
-pid_fd = fl_process_open_pid_file(progname);
-if (pid_fd < 0) {
-  FL_LOGR_CRIT("Could not open PID file or store PID, exiting.\n");
-  break;
-}
+	pid_fd = fl_process_open_pid_file(progname);
+	if (pid_fd < 0) {
+		FL_LOGR_CRIT("Could not open PID file or store PID, exiting.\n");
+		break;
+	}
 
-if (fl_signal_register_handlers(sighandlers) < 0) {
-  FL_LOGR_CRIT("Signal handlers registrations failed, exiting.");
-  break;
-}
+	if (fl_signal_register_handlers(sighandlers) < 0) {
+		FL_LOGR_CRIT("Signal handlers registrations failed, exiting.");
+		break;
+	}
 
-if (fl_init() < 0) {
-  FL_LOGR_CRIT("Falco library initialization failed, exiting.");
-  break;
-}
+	if (fl_init() < 0) {
+		FL_LOGR_CRIT("Falco library initialization failed, exiting.");
+		break;
+	}
+
+    app_main_loop();
+} while(0);
+
+app_shutdown(1);
 ```
+
+
 
  The following code shows how apps can use Falco in their main loop.
 
 ```c
 static void app_main_loop()
 {
-  int nfds_fired;
-  fd_set *rfds, *wfds, *efds;
+	int nfds_fired;
+	fd_set *rfds, *wfds, *efds;
 
-  while (TRUE) {
-    /* Sample set of signals to be blocked */
-    int block_signals[] = { SIGUSR1, SIGUSR2, 0 };
-    int signals_blocked = 0;
-    sigset_t signals_blockset;
+	while (TRUE) {
+		/* Sample set of signals to be blocked */
+		int block_signals[] = { SIGUSR1, SIGUSR2, 0 };
+		int signals_blocked = 0;
+        sigset_t signals_blockset;
 
-    /* select() comes here */
-    nfds_fired = fl_socket_select(&rfds, &wfds, &efds);
-    if (nfds_fired < 0) {
-      FL_LOGR_EMERG("Sockets select() fired with error, exiting.");
-      app_shutdown();
+		/* select() comes here */
+		nfds_fired = fl_socket_select(&rfds, &wfds, &efds);
+		if (nfds_fired < 0) {
+            FL_LOGR_EMERG("Sockets select() fired with error, exiting.");
+            app_shutdown();
+        }
+
+		/* Block signals here */
+        signals_blocked = fl_signals_block(block_signals, &signals_blockset);
+
+		/* Process timer expirations */
+		fl_timers_dispatch(&nfds_fired, rfds);
+
+		/* Process sockets ready for read */
+		if (nfds_fired) {
+            fl_socket_process_reads(&nfds_fired, rfds);
+        }
+
+        /* Process sockets ready for write */
+        if (nfds_fired) {
+            fl_socket_process_writes(&nfds_fired, wfds);
+        }
+
+        /* Process sockets ready for accept */
+        if (nfds_fired) {
+            fl_socket_process_connections(&nfds_fired, rfds);
+        }
+
+		/* Unblock signals that were previously blocked */
+        if (signals_blocked) {
+            (void) fl_signals_unblock(&signals_blockset);
+        }
+    }
+}
+```
+
+Code snippets that exemplify cleanup and shutdown procedures.
+```c
+static void app_shutdown(int exit_code)
+{
+	app_cleanup();
+	exit(exit_code);
+}
+
+static void app_cleanup()
+{
+    /* Stop and close logging */
+    if (logging_started) {
+		fl_logr_closelog(progname);
     }
 
-    /* Block signals here */
-    signals_blocked = fl_signals_block(block_signals, &signals_blockset);
-
-    /* Process timer expirations */
-    fl_timers_dispatch(&nfds_fired, rfds);
-
-    /* Process sockets ready for read */
-    if (nfds_fired) {
-      fl_socket_process_reads(&nfds_fired, rfds);
-    }
-
-    /* Process sockets ready for write */
-    if (nfds_fired) {
-      fl_socket_process_writes(&nfds_fired, wfds);
-    }
-
-    /* Process sockets ready for accept */
-    if (nfds_fired) {
-      fl_socket_process_connections(&nfds_fired, rfds);
-    }
-
-    /* Unblock signals that were previously blocked */
-    if (signals_blocked) {
-      (void) fl_signals_unblock(&signals_blockset);
-    }
-  }
+    /* Close and remove the PID file */
+	if (pid_fd >= 0) {
+		fl_process_close_pid_file(progname, pid_fd);
+		pid_fd = -1;
+	}
 }
 ```
 

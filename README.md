@@ -2,16 +2,6 @@ Falco is a collection of modules that help engineers quickly develop embedded an
 
 [![Build Status](https://travis-ci.org/network-art/falco.svg?branch=master)](https://travis-ci.org/network-art/falco)
 
-#### Contents
-------
-
-1. [About Falco Library](README.md#about-falco-library)
-2. [Modules in Falco](README.md#modules-in-falco)
-3. [Coding style and conventions](README.md#style-and-code-conventions)
-4. [Building](README.md#building)
-5. [Usage](README.md#usage)
-6. [Roadmap](README.md#roadmap)
-
 # About Falco Library
 
 Falco is the reincarnation of the erstwhile SVUtils ([**S**upport**V**antage](https://networkart.com) Utils) library that we built for our [product SupportVantage](https://networkart.com/products/supportvantage). The bird family "Falco Peregrinus" is the inspiration for the name "Falco". [Peregrine Falcon](https://en.wikipedia.org/wiki/Peregrine_falcon), the fastest bird, belongs to this family.
@@ -141,39 +131,39 @@ The following code snippet shows how apps can initialize with Falco library.
 
 ```c
 do {
-	fl_logr_openlog("YOUR_APP_NAME");
+    fl_logr_openlog("YOUR_APP_NAME");
 
-	if (getuid()) {
+    if (getuid()) {
         FL_LOGR_CRIT("%s must be run as root or with sudo privileges, exiting.\n",
                      progname);
-		break;
+        break;
 	}
 
-	if (getppid() == 1) {
-		daemonize = FALSE;
-		FL_LOGR_INFO("%s was started either via /etc/inittab or "
+    if (getppid() == 1) {
+        daemonize = FALSE;
+        FL_LOGR_INFO("%s was started either via /etc/inittab or "
                      "systemctl, will not daemonize", progname);
-	}
+    }
 
-	if (daemonize) {
-		fl_process_daemonize();
-	}
+    if (daemonize) {
+        fl_process_daemonize();
+    }
 
-	pid_fd = fl_process_open_pid_file(progname);
-	if (pid_fd < 0) {
-		FL_LOGR_CRIT("Could not open PID file or store PID, exiting.\n");
-		break;
-	}
+    pid_fd = fl_process_open_pid_file(progname);
+    if (pid_fd < 0) {
+        FL_LOGR_CRIT("Could not open PID file or store PID, exiting.\n");
+        break;
+    }
 
-	if (fl_signal_register_handlers(sighandlers) < 0) {
-		FL_LOGR_CRIT("Signal handlers registrations failed, exiting.");
-		break;
-	}
+    if (fl_signal_register_handlers(sighandlers) < 0) {
+        FL_LOGR_CRIT("Signal handlers registrations failed, exiting.");
+        break;
+    }
 
-	if (fl_init() < 0) {
-		FL_LOGR_CRIT("Falco library initialization failed, exiting.");
-		break;
-	}
+    if (fl_init() < 0) {
+        FL_LOGR_CRIT("Falco library initialization failed, exiting.");
+        break;
+    }
 
     app_main_loop();
 } while(0);
@@ -188,30 +178,30 @@ app_shutdown(1);
 ```c
 static void app_main_loop()
 {
-	int nfds_fired;
-	fd_set *rfds, *wfds, *efds;
+    int nfds_fired;
+    fd_set *rfds, *wfds, *efds;
 
-	while (TRUE) {
-		/* Sample set of signals to be blocked */
-		int block_signals[] = { SIGUSR1, SIGUSR2, 0 };
-		int signals_blocked = 0;
+    while (TRUE) {
+        /* Sample set of signals to be blocked */
+        int block_signals[] = { SIGUSR1, SIGUSR2, 0 };
+        int signals_blocked = 0;
         sigset_t signals_blockset;
 
-		/* select() comes here */
-		nfds_fired = fl_socket_select(&rfds, &wfds, &efds);
-		if (nfds_fired < 0) {
+        /* select() comes here */
+        nfds_fired = fl_socket_select(&rfds, &wfds, &efds);
+        if (nfds_fired < 0) {
             FL_LOGR_EMERG("Sockets select() fired with error, exiting.");
             app_shutdown();
         }
 
-		/* Block signals here */
+        /* Block signals here */
         signals_blocked = fl_signals_block(block_signals, &signals_blockset);
 
-		/* Process timer expirations */
-		fl_timers_dispatch(&nfds_fired, rfds);
+        /* Process timer expirations */
+        fl_timers_dispatch(&nfds_fired, rfds);
 
-		/* Process sockets ready for read */
-		if (nfds_fired) {
+        /* Process sockets ready for read */
+        if (nfds_fired) {
             fl_socket_process_reads(&nfds_fired, rfds);
         }
 
@@ -225,7 +215,7 @@ static void app_main_loop()
             fl_socket_process_connections(&nfds_fired, rfds);
         }
 
-		/* Unblock signals that were previously blocked */
+        /* Unblock signals that were previously blocked */
         if (signals_blocked) {
             (void) fl_signals_unblock(&signals_blockset);
         }
@@ -237,22 +227,22 @@ Code snippets that exemplify cleanup and shutdown procedures.
 ```c
 static void app_shutdown(int exit_code)
 {
-	app_cleanup();
-	exit(exit_code);
+    app_cleanup();
+    exit(exit_code);
 }
 
 static void app_cleanup()
 {
     /* Stop and close logging */
     if (logging_started) {
-		fl_logr_closelog(progname);
+        fl_logr_closelog(progname);
     }
 
     /* Close and remove the PID file */
-	if (pid_fd >= 0) {
-		fl_process_close_pid_file(progname, pid_fd);
-		pid_fd = -1;
-	}
+    if (pid_fd >= 0) {
+        fl_process_close_pid_file(progname, pid_fd);
+        pid_fd = -1;
+    }
 }
 ```
 

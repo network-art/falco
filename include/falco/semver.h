@@ -30,17 +30,29 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
+/**
+ * @file
+ * @brief Semantic Versioning
+ */
+
 #ifndef _SEMVER_H_
 #define _SEMVER_H_
 
+/**
+ * @brief Maximum length of a string that represents a semantic version
+ */
 #define SEMVER_MAX_STRLEN 8 /* Can go up to 99.99.99 */
 
+/**
+ * @file
+ * @brief Semantic Version
+ */
 typedef struct semver_t_ {
-  u_int8_t major_version;
-  u_int8_t minor_version;
-  u_int8_t patch_version;
+  u_int8_t major_version; ///< Major version of a software
+  u_int8_t minor_version; ///< Minor version
+  u_int8_t patch_version; ///< Patch version
   u_int8_t _pad_unused1_;
-  char     version[SEMVER_MAX_STRLEN];
+  char     version[SEMVER_MAX_STRLEN]; ///< String representation of the version
 } semver_t;
 
 #endif /* _SEMVER_H_ */

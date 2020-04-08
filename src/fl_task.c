@@ -123,8 +123,9 @@ fl_task_t *fl_task_create(const char *name)
   return NULL;
 }
 
-void fl_task_delete(fl_task_t *task)
+int fl_task_delete(fl_task_t *task)
 {
+  return -1;
 }
 
 fl_task_t *fl_task_validate_taskptr(fl_task_t *task)

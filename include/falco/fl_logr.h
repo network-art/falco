@@ -30,6 +30,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
+/**
+ * @file
+ * @brief Logging and Tracing
+ */
+
 #ifndef _FL_LOGR_H_
 #define _FL_LOGR_H_
 
@@ -39,18 +44,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define LOG_PRIORITY_CMP(_log_prio_) (_log_prio_ <= cfg_log_priority)
 
+/**
+ * @brief Convenience macro to log a message with priority emergency.
+ */
 #define FL_LOGR_EMERG(_fmt_...)                  \
   do {                                           \
     syslog(LOG_EMERG, _fmt_);                    \
     (void) fprintf(stderr, _fmt_);               \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority alert.
+ */
 #define FL_LOGR_ALERT(_fmt_...)                  \
   do {                                           \
     syslog(LOG_ALERT, _fmt_);                    \
     (void) fprintf(stderr, _fmt_);               \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority critical.
+ */
 #define FL_LOGR_CRIT(_fmt_...)                    \
   do {                                            \
     int _lp = LOG_CRIT;                           \
@@ -60,6 +74,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                             \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority error.
+ */
 #define FL_LOGR_ERR(_fmt_...)                    \
   do {                                           \
     int _lp = LOG_ERR;                           \
@@ -68,6 +85,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                            \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority warning.
+ */
 #define FL_LOGR_WARNING(_fmt_...)                \
   do {                                           \
     int _lp = LOG_WARNING;                       \
@@ -76,6 +96,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                            \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority notice.
+ */
 #define FL_LOGR_NOTICE(_fmt_...)                 \
   do {                                           \
     int _lp = LOG_NOTICE;                        \
@@ -84,6 +107,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                            \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority informational.
+ */
 #define FL_LOGR_INFO(_fmt_...)                   \
   do {                                           \
     int _lp = LOG_INFO;                          \
@@ -92,6 +118,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                            \
   } while(0)
 
+/**
+ * @brief Convenience macro to log a message with priority debug.
+ */
 #define FL_LOGR_DEBUG(_fmt_...)                  \
   do {                                           \
     int _lp = LOG_DEBUG;                         \
@@ -100,11 +129,81 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                            \
   } while(0)
 
-extern void fl_logr_openlog(const char *);
-extern void fl_logr_closelog(const char *);
-extern void fl_logr_cfg_priority(int);
-extern void fl_logr_log(int, const char *, ...);
-extern void fl_logr_vlog(int, const char *, va_list);
+/**
+ * @brief Open a connection to the system logger.
+ *
+ * Open a connection to the system logger for the application. The string
+ * pointed to by @p ident is prepended to every message, and is typically set
+ * to the program name.
+ *
+ * The following options are passed to the system logger:
+ * LOG_CONS | LOG_NDELAY | LOG_PID, LOG_LOCAL0.
+ *
+ * @param[in] ident Typically the program or the application name
+ *
+ * @see Documentation for openlog() describes the options passed to the system
+ * logger.
+ *
+ */
+extern void fl_logr_openlog(const char *ident);
+
+/**
+ * @brief Close the connection to the system logger.
+ *
+ * Closes the connection the system logger (that was previously opened using
+ * fl_logr_openlog()).
+ *
+ * @param[in] ident Typically the program or the application name, passed
+ *                  previously to fl_logr_openlog().
+ *
+ */
+extern void fl_logr_closelog(const char *ident);
+
+/**
+ * @brief Configure the priority for the logger.
+ *
+ * Configure/Set the priority for the logger. The default priority is the log
+ * level LOG_INFO used in syslog.
+ *
+ * @param[in] priority Priority or syslog log level. Acceptable values are:
+ *
+ *     LOG_EMERG (highest)
+ *     LOG_ALERT
+ *     LOG_CRIT
+ *     LOG_ERR
+ *     LOG_WARNING
+ *     LOG_NOTICE
+ *     LOG_INFO (Default)
+ *     LOG_DEBUG
+ *
+ */
+extern void fl_logr_cfg_priority(int priority);
+
+/**
+ * @brief Generate and send message to the system logger.
+ *
+ * @param[in] priority Priority or syslog log level. See fl_logr_cfg_priority()
+ *                     for a list of acceptable priorities.
+ * @param[in] format Format string of the message followed by a variable number
+ *                   of arguments
+ *
+ */
+extern void fl_logr_log(int priority, const char *format, ...);
+
+/**
+ * @brief Generate and send message to the system logger.
+ *
+ * This function performs the same task as fl_logr_log() with the difference
+ * that it takes a set of arguments which have been obtained using stdarg(3)
+ * variable argument list macros.
+ *
+ * @param[in] priority Priority or syslog log level. See fl_logr_cfg_priority()
+ *                     for a list of acceptable priorities.
+ * @param[in] format Format string of the message
+ * @param[in] args Variable arguments list
+ *
+ */
+extern void fl_logr_vlog(int priority, const char *format, va_list args);
 
 extern int cfg_log_priority;
 

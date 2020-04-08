@@ -6,6 +6,8 @@ Falco is a collection of modules that help engineers quickly develop embedded an
 
 Falco is the reincarnation of the erstwhile SVUtils ([**S**upport**V**antage](https://networkart.com) Utils) library that we built for our [product SupportVantage](https://networkart.com/products/supportvantage). The bird family "Falco Peregrinus" is the inspiration for the name "Falco". [Peregrine Falcon](https://en.wikipedia.org/wiki/Peregrine_falcon), the fastest bird, belongs to this family.
 
+# Motivation
+
 SVAgent (**S**upport**V**antage **Agent**), a component of our product, has many modules. Each module runs as a process/daemon. All modules have the same infrastructural requirements. Some of them are listed below.
 
 - Provide simple API for logging via Syslog (with controls for setting log level/priority).

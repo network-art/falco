@@ -30,6 +30,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
+/**
+ * @file
+ * @brief Convenience macros for assertion, memory allocation.
+ */
+
 #ifndef _FL_STDLIB_H_
 #define _FL_STDLIB_H_
 
@@ -38,12 +43,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "falco/fl_logr.h"
 
+/**
+ * @brief Abort the program if the assertion is false
+ *
+ * Call to @c assert() is compiled only if the flag -DENABLE_ASSERTIONS is
+ * incuded during compilation.
+ *
+ * @param[in] \_cond\_ scalar expression
+ *
+ * @see assert(3)
+ */
 #if (defined(ENABLE_ASSERTIONS))
 #define FL_ASSERT(_cond_) assert((_cond_))
 #else /* !ENABLE_ASSERTIONS */
 #define FL_ASSERT(_cond_)
-#endif /* !ENABLE_ASSERTIONS */      
+#endif /* !ENABLE_ASSERTIONS */
 
+/**
+ * @brief Allocate dynamic memory
+ *
+ * This function uses calloc() to allocate memory for an arrary of \_n\_
+ * elements of size @ sizeof(\_casttotype\_) and returns a pointer to the
+ * allocated memory.
+ *
+ * @param[in] \_casttotype\_ Used to determine the size of each element, and the
+ *                           data-type to which the allocated memory needs to be
+ *                           casted to.
+ * @param[in] \_n\_ Number of elements
+ * @param[in] \_var\_ Variable to which the allocated memory is assigned to
+ * @param[in] \_msg\_ Message to be logged in case there is a failure in
+ *                    allocating memory
+ *
+ * @see @c calloc(3)
+ */
 #define FL_ALLOC(_casttotype_, _n_, _var_, _msg_)                   \
   do {                                                              \
     _var_ = (_casttotype_ *) calloc((_n_), sizeof(_casttotype_));   \
@@ -57,6 +89,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                                               \
   } while (0)
 
+/**
+ * @brief Change the size of the memory block
+ *
+ * This function uses realloc() to change the size of the memory block.
+ *
+ * @param[in] \_casttotype\_ Used to determine the size of each element, and the
+ *                           data-type to which the allocated memory needs to be
+ *                           casted to.
+ * @param[in] \_n\_ Number of elements
+ * @param[in] \_var\_ Pointer to memory block that was previously allocated
+ * @param[in] \_msg\_ Message to be logged in case there is a failure in
+ *                    resizing the memory block
+ *
+ * @see @c realloc(3)
+ */
 #define FL_REALLOC(_casttotype_, _n_, _var_, _msg_)                 \
   do {                                                              \
     _var_ = (_casttotype_ *)                                        \
@@ -70,6 +117,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                                               \
   } while (0)
 
+/**
+ * @brief Free memory space
+ *
+ * This function uses @c free() to free the memory space pointed to by
+ * @c \_var\_.
+ *
+ * @param[in] \_var\_ Pointer to memory block that needs to be freed
+ * @param[in] \_msg\_ Message describing the memory block being freed
+ *
+ * @see @c free(3)
+ */
 #define FL_FREE(_var_, _msg_)                                       \
   do {                                                              \
     free((_var_));                                                  \

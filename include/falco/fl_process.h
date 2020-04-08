@@ -30,14 +30,86 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
+/**
+ * @file
+ * @brief Convenience functions/utilities for application process
+ */
+
 #ifndef _FL_PROCESS_H_
 #define _FL_PROCESS_H_
 
+/**
+ * @brief Initialize all falco modules.
+ *
+ * Initialize the timer, socket, task, and (network) interface modules in the
+ * order listed. Post initialization, the function dumps all the network
+ * interfaces read from the kernel.
+ *
+ * @return -1 on error, 0 on success.
+ */
 extern int fl_init(void);
+
+/**
+ * @brief Dump status and state of all falco modules.
+ *
+ * @param[in] fd Stream to which the status and state of all modules needs to
+ *               be written. If this parameter is NULL, then the output is
+ *               written to syslog.
+ *
+ * @return -1 on error, 0 on success.
+ */
 extern int fl_dump(FILE *fd);
 
+/**
+ * @brief Daemonize the application process.
+ *
+ * This function uses the double fork() method to daemonize the process.
+ * It causes the application process to exit() if attempts to fork() fail or the
+ * attempt to create a session fails.
+ *
+ * @return -1 on error, 0 on success.
+ */
 extern int fl_process_daemonize(void);
+
+/**
+ * @brief Open a file and record the PID of the application.
+ *
+ * Open the file whose name is the string pointed to by progname.
+ *
+ * If the caller supplies a complete path, that is, progname contains a
+ * forward slash '/' in the first character, then the argument is treated as
+ * the full path. Otherwise, it is treated as the name of the application and
+ * the file is opened in the _PATH_PID directory.
+ *
+ * The file is created if it does not exist. The PID of the application is
+ * recorded in the file, and the file is locked.
+ *
+ * @param[in] progname The name of the application or the complete path to a
+ *                     file that should contain the PID.
+ *
+ * @return On success, a file descriptor for the PID file is returned. On error,
+ *         a negative value (representing the errno) is returned.
+ */
 extern int fl_process_open_pid_file(const char *progname);
+
+/**
+ * @brief Close the PID file descriptor and delete the PID file.
+ *
+ * Close the file descriptor and delete the PID file whose name is the string
+ * pointed to by progname.
+ *
+ * If the caller supplies a complete path, that is, progname contains a
+ * forward slash '/' in the first character, then the argument is treated as
+ * the full path. Otherwise, it is treated as the name of the application and
+ * the file is deleted from the _PATH_PID directory.
+ *
+ * @param[in] progname The name of the application or the complete path to a
+ *                     file that should contain the PID.
+ * @param[in] pid_fd A File descriptor of the PID file.
+ *
+ * @return On success, 0 is returned.
+ * On error, a negative value (representing the errno) is returned.
+ */
 extern int fl_process_close_pid_file(const char *progname, int pid_fd);
 
 #endif /* _FL_PROCESS_H_ */
